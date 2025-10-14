@@ -1,7 +1,7 @@
 <?php
 $host = 'localhost'; // Database host
-$dbname = 'taskawrg_database'; // Database name
-$username = 'taskawrg_db1'; // Database username
+$dbname = 'taskmolf_db'; // Database name
+$username = 'taskmolf_admin'; // Database username
 $password = 'Xander24427279'; // Database password
 
 try {
