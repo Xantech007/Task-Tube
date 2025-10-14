@@ -87,12 +87,12 @@ $channel = filter_var($_POST['channel'] ?? '', FILTER_SANITIZE_STRING);
 $bank_name = filter_var($_POST['bank_name'] ?? '', FILTER_SANITIZE_STRING);
 $bank_account = filter_var($_POST['bank_account'] ?? '', FILTER_SANITIZE_STRING);
 $amount = filter_var($_POST['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
-$adjusted_amount = $amount * $rate; // Multiply amount by rate
+$adjusted_amount = $amount * $rate; // Multiply amount by rate for display and withdrawals table
 $error = null;
 
 if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount > 0) {
-    if ($adjusted_amount > $balance) {
-        error_log('Insufficient balance for user ID: ' . $_SESSION['user_id'] . ', requested: ' . $adjusted_amount . ', available: ' . $balance, 3, '../debug.log');
+    if ($amount > $balance) { // Check raw amount against balance
+        error_log('Insufficient balance for user ID: ' . $_SESSION['user_id'] . ', requested: ' . $amount . ', available: ' . $balance, 3, '../debug.log');
         $error = 'Insufficient balance for withdrawal.';
     } elseif ($amount <= 0) {
         error_log('Invalid amount for user ID: ' . $_SESSION['user_id'] . ', amount: ' . $amount, 3, '../debug.log');
@@ -101,8 +101,8 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
         try {
             $pdo->beginTransaction();
 
-            // Deduct adjusted amount from balance
-            $new_balance = $balance - $adjusted_amount;
+            // Deduct raw amount from balance
+            $new_balance = $balance - $amount;
             $stmt = $pdo->prepare("UPDATE users SET balance = ? WHERE id = ?");
             $stmt->execute([$new_balance, $_SESSION['user_id']]);
 
@@ -117,7 +117,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             $stmt->execute([$_SESSION['user_id'], $adjusted_amount, $channel, $bank_name, $bank_account, $ref_number]);
 
             $pdo->commit();
-            error_log('Withdrawal request created for user ID: ' . $_SESSION['user_id'] . ', amount: ' . $adjusted_amount . ', channel: ' . $channel, 3, '../debug.log');
+            error_log('Withdrawal request created for user ID: ' . $_SESSION['user_id'] . ', raw amount: ' . $amount . ', adjusted amount: ' . $adjusted_amount . ', channel: ' . $channel, 3, '../debug.log');
         } catch (PDOException $e) {
             $pdo->rollBack();
             error_log('Withdrawal error for user ID: ' . $_SESSION['user_id'] . ': ' . $e->getMessage(), 3, '../debug.log');
