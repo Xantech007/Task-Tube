@@ -79,6 +79,17 @@ try {
 $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : null;
 $error_message = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : null;
 
+// Function to check if a URL is accessible
+function url_exists($url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code == 200;
+}
+
 // Fetch a random unwatched video
 try {
     $stmt = $pdo->prepare("
@@ -94,11 +105,10 @@ try {
     $video = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($video) {
         $video['url'] = 'https://tasktube.app/' . $video['url'];
-        $file_path = '../' . ltrim(parse_url($video['url'], PHP_URL_PATH), '/');
-        if (!file_exists($file_path)) {
-            error_log('Video file not found: ' . $file_path, 3, '../debug.log');
+        if (!url_exists($video['url'])) {
+            error_log('Video file not accessible: ' . $video['url'], 3, '../debug.log');
             $video = null;
-            $video_error = 'Video file not found: ' . htmlspecialchars($video['url']);
+            $video_error = 'Video file not accessible: ' . htmlspecialchars($video['url']);
         } else {
             error_log('Video loaded: ' . $video['url'], 3, '../debug.log');
         }
@@ -325,7 +335,6 @@ try {
         }
 
         .play-button {
-            display: none;
             margin: 10px auto;
             padding: 10px 20px;
             background: var(--accent-color);
@@ -593,12 +602,13 @@ try {
                        controls 
                        playsinline 
                        muted 
-                       data-video-id="<?php echo $video['id']; ?>"
+                       preload="auto" 
+                       data-video-id="<?php echo $video['id']; ?>" 
                        data-reward="<?php echo $video['reward']; ?>">
                     <source src="<?php echo htmlspecialchars($video['url']); ?>" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-                <button class="play-button" id="playButton">Play Video</button>
+                <button class="play-button" id="playButton" style="display: block;">Play Video</button>
                 <h4 id="video-reward">Earn <span>$<?php echo number_format($video['reward'], 2); ?></span> by watching <span><?php echo htmlspecialchars($video['title']); ?></span>. The more videos you watch, the more your <span>crypto balance</span> increases</h4>
                 <?php if (isset($video_error)): ?>
                     <p class="error"><?php echo $video_error; ?></p>
@@ -796,6 +806,7 @@ try {
 
         // Video Watch Tracking
         const videoPlayer = document.getElementById('videoPlayer');
+        const playButton = document.getElementById('playButton');
         let interval = null;
         let accumulatedReward = 0;
         let totalReward = 0;
@@ -806,12 +817,31 @@ try {
             // Handle video errors
             videoPlayer.addEventListener('error', function(e) {
                 console.error('Video playback error:', e);
+                let errorMessage = 'Failed to play video. ';
+                if (e.target.error) {
+                    switch (e.target.error.code) {
+                        case MediaError.MEDIA_ERR_ABORTED:
+                            errorMessage += 'The video playback was aborted.';
+                            break;
+                        case MediaError.MEDIA_ERR_NETWORK:
+                            errorMessage += 'A network error occurred. Please check your connection.';
+                            break;
+                        case MediaError.MEDIA_ERR_DECODE:
+                            errorMessage += 'The video could not be decoded. The file may be corrupted.';
+                            break;
+                        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            errorMessage += 'The video format is not supported or the file is inaccessible.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                    }
+                }
                 Swal.fire({
                     icon: 'error',
                     title: 'Playback Error',
-                    text: 'Failed to play video. Check the file or try another video.'
+                    text: errorMessage,
                 });
-                document.getElementById('playButton').style.display = 'block';
+                playButton.style.display = 'block';
             });
 
             // Calculate reward per second when video metadata is loaded
@@ -823,6 +853,7 @@ try {
 
             // Increment displayed balance during playback
             videoPlayer.addEventListener('play', function() {
+                playButton.style.display = 'none';
                 if (interval === null) {
                     interval = setInterval(() => {
                         accumulatedReward += rewardPerSecond;
@@ -873,6 +904,7 @@ try {
                                 title: 'Error',
                                 text: response.error || 'Failed to record video watch.'
                             });
+                            playButton.style.display = 'block';
                         }
                     },
                     error: function() {
@@ -882,19 +914,21 @@ try {
                             title: 'Server Error',
                             text: 'An error occurred while tracking video watch.'
                         });
+                        playButton.style.display = 'block';
                     }
                 });
             });
 
-            // Play button to bypass autoplay restrictions
-            document.getElementById('playButton').addEventListener('click', function() {
+            // Play button to initiate playback
+            playButton.addEventListener('click', function() {
                 videoPlayer.play().catch(function(error) {
                     console.error('Play error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Playback Error',
-                        text: 'Failed to play video: ' + error.message
+                        text: 'Failed to play video: ' + error.message,
                     });
+                    playButton.style.display = 'block';
                 });
             });
         }
@@ -920,10 +954,7 @@ try {
                             clearInterval(interval);
                             interval = null;
                         }
-                        videoPlayer.play().catch(function(error) {
-                            console.error('Auto-play error:', error);
-                            document.getElementById('playButton').style.display = 'block';
-                        });
+                        playButton.style.display = 'block'; // Show play button for next video
                     } else {
                         const videoSection = document.querySelector('.video-section');
                         videoPlayer?.remove();
