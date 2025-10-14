@@ -79,15 +79,26 @@ try {
 $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : null;
 $error_message = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : null;
 
-// Function to check if a URL is accessible
+// Improved function to check if a URL is accessible
 function url_exists($url) {
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_NOBODY, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_NOBODY, true); // HEAD request
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Timeout after 10 seconds
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // Connection timeout
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification (use with caution)
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false); // Disable host verification (use with caution)
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
     curl_close($ch);
-    return $code == 200;
+    
+    if ($code !== 200) {
+        error_log("url_exists failed for $url: HTTP $code, cURL error: $error", 3, '../debug.log');
+        return ['status' => false, 'error' => "HTTP $code - $error"];
+    }
+    return ['status' => true];
 }
 
 // Fetch a random unwatched video
@@ -104,11 +115,12 @@ try {
     $stmt->execute([$_SESSION['user_id']]);
     $video = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($video) {
-        $video['url'] = 'https://tasktube.app/' . $video['url'];
-        if (!url_exists($video['url'])) {
-            error_log('Video file not accessible: ' . $video['url'], 3, '../debug.log');
+        $video['url'] = 'https://tasktube.us/' . ltrim($video['url'], '/');
+        $url_check = url_exists($video['url']);
+        if (!$url_check['status']) {
+            error_log('Video file not accessible: ' . $video['url'] . ' (' . $url_check['error'] . ')', 3, '../debug.log');
             $video = null;
-            $video_error = 'Video file not accessible: ' . htmlspecialchars($video['url']);
+            $video_error = 'Video file not accessible: ' . htmlspecialchars($video['url']) . ' (' . htmlspecialchars($url_check['error']) . ')';
         } else {
             error_log('Video loaded: ' . $video['url'], 3, '../debug.log');
         }
@@ -119,7 +131,7 @@ try {
 } catch (PDOException $e) {
     error_log('Video fetch error: ' . $e->getMessage(), 3, '../debug.log');
     $video = null;
-    $video_error = 'Failed to load video from database.';
+    $video_error = 'Failed to load video from database: ' . htmlspecialchars($e->getMessage());
 }
 ?>
 
@@ -941,7 +953,7 @@ try {
                 dataType: 'json',
                 success: function(data) {
                     if (data) {
-                        const videoUrl = 'https://tasktube.app/' + data.url;
+                        const videoUrl = 'https://tasktube.us/' + data.url;
                         videoPlayer.innerHTML = `<source src="${videoUrl}" type="video/mp4">Your browser does not support the video tag.`;
                         videoPlayer.setAttribute('data-video-id', data.id);
                         videoPlayer.setAttribute('data-reward', data.reward);
