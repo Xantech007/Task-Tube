@@ -456,7 +456,7 @@ try {
 
             <div class="contact-info">
                 <h2>Contact Information</h2>
-                <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+17655329001" target="_blank">+1 (765) 532-9001</a></strong></p>
+                <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+447438783028" target="_blank">+44 7438 783028</a></strong></p>
                 <p><i class="far fa-clock"></i> Availability: <strong>24/7</strong></p>
                 <p><i class="fas fa-hourglass-half"></i> Response Time: <strong>Usually within 24 hours</strong></p>
             </div>
@@ -476,7 +476,7 @@ try {
 
         <div class="cta-banner">
             <h2>Need Help? Contact Us Now!</h2>
-            <a href="https://wa.me/+17655329001" target="_blank" class="btn" onclick="console.log('CTA button clicked')">Message Us on WhatsApp</a>
+            <a href="https://wa.me/+447438783028" target="_blank" class="btn" onclick="console.log('CTA button clicked')">Message Us on WhatsApp</a>
         </div>
 
         <div id="notificationContainer"></div>
