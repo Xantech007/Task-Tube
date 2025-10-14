@@ -281,28 +281,6 @@ try {
             width: 100%;
             max-width: 640px;
             box-shadow: 0 6px 16px var(--shadow-color);
-            pointer-events: none; /* Disable direct interaction with video */
-        }
-
-        .video-controls {
-            margin: 10px auto;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .video-controls button {
-            padding: 10px 20px;
-            background: var(--accent-color);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .video-controls button:hover {
-            background: var(--accent-hover);
         }
 
         .video-section h4 {
@@ -366,6 +344,21 @@ try {
         .notification span {
             font-size: 14px;
             font-weight: 500;
+        }
+
+        .play-button {
+            margin: 10px auto;
+            padding: 10px 20px;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .play-button:hover {
+            background: var(--accent-hover);
         }
 
         .form-card {
@@ -618,17 +611,16 @@ try {
             <h1>Watch Videos to Earn Crypto</h1>
             <?php if ($video): ?>
                 <video id="videoPlayer" 
+                       controls 
                        playsinline 
+                       muted 
                        preload="auto" 
                        data-video-id="<?php echo $video['id']; ?>" 
                        data-reward="<?php echo $video['reward']; ?>">
                     <source src="<?php echo htmlspecialchars($video['url']); ?>" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-                <div class="video-controls">
-                    <button id="playButton" style="display: block;">Play/Pause</button>
-                    <button id="muteButton">Mute/Unmute</button>
-                </div>
+                <button class="play-button" id="playButton" style="display: block;">Play Video</button>
                 <h4 id="video-reward">Earn <span>$<?php echo number_format($video['reward'], 2); ?></span> by watching <span><?php echo htmlspecialchars($video['title']); ?></span>. The more videos you watch, the more your <span>crypto balance</span> increases</h4>
                 <?php if (isset($video_error)): ?>
                     <p class="error"><?php echo $video_error; ?></p>
@@ -827,7 +819,6 @@ try {
         // Video Watch Tracking
         const videoPlayer = document.getElementById('videoPlayer');
         const playButton = document.getElementById('playButton');
-        const muteButton = document.getElementById('muteButton');
         let interval = null;
         let accumulatedReward = 0;
         let totalReward = 0;
@@ -870,27 +861,11 @@ try {
                 const duration = videoPlayer.duration;
                 totalReward = parseFloat(videoPlayer.getAttribute('data-reward'));
                 rewardPerSecond = totalReward / duration;
-                muteButton.textContent = videoPlayer.muted ? 'Unmute' : 'Mute';
-            });
-
-            // Prevent seeking
-            videoPlayer.addEventListener('seeking', function(e) {
-                e.preventDefault();
-                videoPlayer.currentTime = 0; // Reset to start
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Seeking Not Allowed',
-                    text: 'Please watch the video from the beginning.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                playButton.textContent = 'Play/Pause';
-                playButton.style.display = 'block';
             });
 
             // Increment displayed balance during playback
             videoPlayer.addEventListener('play', function() {
-                playButton.textContent = 'Pause';
+                playButton.style.display = 'none';
                 if (interval === null) {
                     interval = setInterval(() => {
                         accumulatedReward += rewardPerSecond;
@@ -908,7 +883,6 @@ try {
                     clearInterval(interval);
                     interval = null;
                 }
-                playButton.textContent = 'Play';
             });
 
             // Save balance and load next video when video ends
@@ -942,7 +916,6 @@ try {
                                 title: 'Error',
                                 text: response.error || 'Failed to record video watch.'
                             });
-                            playButton.textContent = 'Play';
                             playButton.style.display = 'block';
                         }
                     },
@@ -953,35 +926,22 @@ try {
                             title: 'Server Error',
                             text: 'An error occurred while tracking video watch.'
                         });
-                        playButton.textContent = 'Play';
                         playButton.style.display = 'block';
                     }
                 });
             });
 
-            // Play/Pause button
+            // Play button to initiate playback
             playButton.addEventListener('click', function() {
-                if (videoPlayer.paused) {
-                    videoPlayer.currentTime = 0; // Start from beginning
-                    videoPlayer.play().catch(function(error) {
-                        console.error('Play error:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Playback Error',
-                            text: 'Failed to play video: ' + error.message,
-                        });
-                        playButton.textContent = 'Play';
-                        playButton.style.display = 'block';
+                videoPlayer.play().catch(function(error) {
+                    console.error('Play error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Playback Error',
+                        text: 'Failed to play video: ' + error.message,
                     });
-                } else {
-                    videoPlayer.pause();
-                }
-            });
-
-            // Mute/Unmute button
-            muteButton.addEventListener('click', function() {
-                videoPlayer.muted = !videoPlayer.muted;
-                muteButton.textContent = videoPlayer.muted ? 'Unmute' : 'Mute';
+                    playButton.style.display = 'block';
+                });
             });
         }
 
@@ -1006,15 +966,12 @@ try {
                             clearInterval(interval);
                             interval = null;
                         }
-                        playButton.textContent = 'Play';
-                        playButton.style.display = 'block';
-                        muteButton.textContent = videoPlayer.muted ? 'Unmute' : 'Mute';
+                        playButton.style.display = 'block'; // Show play button for next video
                     } else {
                         const videoSection = document.querySelector('.video-section');
                         videoPlayer?.remove();
                         document.getElementById('video-reward')?.remove();
                         document.getElementById('playButton')?.remove();
-                        document.getElementById('muteButton')?.remove();
                         const noVideosMessage = document.createElement('p');
                         noVideosMessage.id = 'no-videos-message';
                         noVideosMessage.textContent = 'No ads available at the moment, please check back later.';
@@ -1109,30 +1066,6 @@ try {
         // Context Menu Disable
         document.addEventListener('contextmenu', function(event) {
             event.preventDefault();
-        });
-
-        // Prevent video source inspection via drag-and-drop
-        document.addEventListener('dragstart', function(event) {
-            if (event.target.tagName === 'VIDEO') {
-                event.preventDefault();
-            }
-        });
-
-        // Prevent keyboard shortcuts for seeking and other controls
-        document.addEventListener('keydown', function(event) {
-            // Block arrow keys (seek) and other control-related keys except spacebar and 'm'
-            if (['ArrowLeft', 'ArrowRight', 'f', 'F'].includes(event.key)) {
-                if (event.target.tagName === 'VIDEO') {
-                    event.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Action Not Allowed',
-                        text: 'Please use the Play/Pause or Mute/Unmute buttons.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            }
         });
     </script>
 </body>
