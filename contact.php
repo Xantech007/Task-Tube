@@ -7,9 +7,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Contact Task Tube's support team 24/7 via WhatsApp for assistance with your account, login, or general inquiries.">
-    <meta name="keywords" content="Task Tube, contact support, earn money online, watch ads, customer service">
-    <meta name="author" content="Task Tube">
     <title>Task Tube - Contact Us</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,110 +20,64 @@
         }
 
         body {
-            background: #f5f7fa;
+            background: linear-gradient(135deg, #6e44ff, #b5179e);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            color: #333;
-            padding-top: 80px; /* Matches header height */
-            padding-bottom: 100px; /* Matches footer height */
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px 80px;
         }
 
-        /* Hero Section */
-        .hero-section {
-            background: linear-gradient(135deg, #6e44ff, #b5179e);
-            color: #fff;
-            text-align: center;
-            padding: 100px 20px;
-            position: relative;
-            overflow: hidden;
-            z-index: 10;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('https://source.unsplash.com/random/1920x1080/?technology') no-repeat center center/cover;
-            opacity: 0.1;
-            z-index: 0;
-        }
-
-        .hero-section h1 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-section p {
-            font-size: 18px;
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0 auto 30px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Main Container */
-        .index-container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .section-title {
-            font-size: 36px;
-            font-weight: 600;
-            color: #333;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .contact-content {
+        .contact-container {
             background: #fff;
             border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
         }
 
-        .contact-content h2 {
-            font-size: 24px;
+        .contact-container h1 {
+            font-size: 32px;
             font-weight: 600;
-            color: #6e44ff;
-            margin: 30px 0 15px;
-            text-align: left;
+            color: #333;
+            margin-bottom: 20px;
         }
 
-        .contact-content p {
+        .contact-container h2 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #ff69b4;
+            margin: 30px 0 15px;
+        }
+
+        .contact-container p {
             font-size: 16px;
             color: #666;
-            line-height: 1.6;
+            line-height: 1.8;
             margin-bottom: 20px;
             text-align: left;
         }
 
-        .contact-content ul {
+        .contact-container ul {
             list-style: none;
             padding: 0;
             margin-bottom: 20px;
             text-align: left;
         }
 
-        .contact-content ul li {
+        .contact-container ul li {
             font-size: 16px;
             color: #666;
-            line-height: 1.6;
+            line-height: 1.8;
             margin-bottom: 10px;
             position: relative;
-            padding-left: 30px;
+            padding-left: 25px;
         }
 
-        .contact-content ul li::before {
+        .contact-container ul li::before {
             content: '\f058';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
@@ -150,55 +101,37 @@
             text-decoration: underline;
         }
 
-        /* CTA Banner */
-        .cta-banner {
-            background: linear-gradient(135deg, #6e44ff, #b5179e);
-            color: #fff;
+        .cta {
+            background-color: #f0e9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
             text-align: center;
-            padding: 60px 20px;
-            border-radius: 15px;
-            margin: 40px 20px;
         }
 
-        .cta-banner h2 {
-            font-size: 32px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .cta-banner .btn {
-            background-color: #fff;
-            color: #6e44ff;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 50px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-        }
-
-        .cta-banner .btn:hover {
-            background-color: #f0f0f0;
-        }
-
-        /* Button Styles */
-        .signup-link .btn {
-            background-color: #6e44ff;
-            color: #fff;
-            padding: 12px 30px;
-            font-size: 16px;
+        .cta p {
+            color: #5a00b5;
             font-weight: 500;
-            border-radius: 25px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .signup-link {
+            font-size: 16px;
+            color: #666;
+            margin-top: 30px;
+        }
+
+        .signup-link a {
+            color: #6e44ff;
             text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            font-weight: 600;
         }
 
-        .signup-link .btn:hover {
-            background-color: #5a00b5;
+        .signup-link a:hover {
+            text-decoration: underline;
         }
 
-        /* Notice Popup */
         .notice {
             position: fixed;
             top: 50%;
@@ -207,7 +140,7 @@
             background: #fff;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            padding: 30px;
+            padding: 20px;
             max-width: 400px;
             width: 90%;
             text-align: center;
@@ -216,13 +149,13 @@
         }
 
         .notice h2 {
-            font-size: 24px;
-            color: #6e44ff;
-            margin-bottom: 15px;
+            font-size: 20px;
+            color: #ff69b4;
+            margin-bottom: 10px;
         }
 
         .notice p {
-            font-size: 16px;
+            font-size: 14px;
             color: #666;
             margin-bottom: 20px;
             text-align: center;
@@ -230,116 +163,43 @@
 
         .close-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 24px;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
             cursor: pointer;
             color: #999;
-            transition: color 0.3s ease;
-        }
-
-        .close-btn:hover {
-            color: #333;
-        }
-
-        .notice .btn {
-            background-color: #6e44ff;
-            color: #fff;
-            padding: 12px 30px;
-            font-size: 16px;
-            font-weight: 500;
-            border-radius: 25px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .notice .btn:hover {
-            background-color: #5a00b5;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .hero-section h1 {
-                font-size: 36px;
-            }
-
-            .hero-section p {
-                font-size: 16px;
-            }
-
-            .section-title {
-                font-size: 30px;
-            }
-
-            .contact-content {
-                padding: 20px;
-            }
         }
 
         @media (max-width: 768px) {
-            body {
-                padding-top: 70px;
-                padding-bottom: 80px;
+            .contact-container {
+                padding: 20px;
             }
 
-            .hero-section {
-                padding: 80px 20px;
+            .contact-container h1 {
+                font-size: 28px;
             }
 
-            .hero-section h1 {
-                font-size: 32px;
+            .contact-container h2 {
+                font-size: 22px;
             }
 
-            .hero-section p {
+            .contact-container p,
+            .contact-container ul li {
                 font-size: 15px;
-            }
-
-            .section-title {
-                font-size: 28px;
-            }
-
-            .cta-banner h2 {
-                font-size: 28px;
             }
         }
 
         @media (max-width: 480px) {
-            body {
-                padding-top: 60px;
-                padding-bottom: 60px;
-            }
-
-            .hero-section {
-                padding: 60px 15px;
-            }
-
-            .hero-section h1 {
-                font-size: 28px;
-            }
-
-            .hero-section p {
-                font-size: 14px;
-            }
-
-            .section-title {
-                font-size: 24px;
-            }
-
-            .contact-content {
+            .contact-container {
                 padding: 15px;
             }
 
-            .cta-banner {
-                padding: 40px 15px;
-            }
-
-            .cta-banner h2 {
+            .contact-container h1 {
                 font-size: 24px;
             }
 
-            .cta-banner .btn {
-                padding: 12px 30px;
-                font-size: 16px;
+            .contact-container h2 {
+                font-size: 20px;
             }
         }
     </style>
@@ -348,53 +208,41 @@
     <?php include 'inc/header.php'; ?>
     <?php include 'inc/navbar.php'; ?>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <h1>Contact Task Tube</h1>
-        <p>Reach out to our 24/7 support team via WhatsApp for help with your account, login, or any inquiries!</p>
-    </section>
+    <div class="contact-container">
+        <h1>Contact Our Support Team</h1>
+        <p>
+            We're here to help with any questions or issues you may have! At Task Tube, our dedicated support team is available to assist you 24/7. Whether you need help with your account, login, or have general inquiries, feel free to reach out.
+        </p>
 
-    <!-- Contact Content -->
-    <div class="index-container">
-        <h2 class="section-title">Get in Touch</h2>
-        <div class="contact-content">
-            <p>
-                We're here to help with any questions or issues you may have! At Task Tube, our dedicated support team is available 24/7. Whether you need help with your account, login, or have general inquiries, feel free to reach out.
-            </p>
-
-            <div class="contact-info">
-                <h2>Contact Information</h2>
-                <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+17655329001" target="_blank">+1 (765) 532-9001</a></strong></p>
-                <p><i class="far fa-clock"></i> Availability: <strong>24/7</strong></p>
-                <p><i class="fas fa-hourglass-half"></i> Response Time: <strong>Usually within 24 hours</strong></p>
-            </div>
-
-            <div class="categories">
-                <h2>We Can Help With:</h2>
-                <ul>
-                    <li>Technical Support for Login/Access Issues</li>
-                    <li>Verification Requests</li>
-                </ul>
-            </div>
-
-            <p class="signup-link">
-                Not yet a member? <a href="register.php" class="btn">Sign Up Now</a>
-            </p>
+        <div class="contact-info">
+            <h2>Contact Information</h2>
+            <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+447438783028" target="_blank">+44 7438 783028</a></strong></p>
+            <p><i class="far fa-clock"></i> Availability: <strong>24/7</strong></p>
+            <p><i class="fas fa-hourglass-half"></i> Response Time: <strong>Usually within 24 hours</strong></p>
         </div>
+
+        <div class="categories">
+            <h2>We Can Help With:</h2>
+            <ul>
+                <li>Technical Support for Login/Access Issues</li>
+                <li>Verification Requests</li>
+            </ul>
+        </div>
+
+        <div class="cta">
+            <p><i class="fab fa-whatsapp"></i> Send us a WhatsApp message anytime — we're ready to assist you!</p>
+        </div>
+
+        <p class="signup-link">
+            Not yet a member? <a href="register.php">Sign Up Now</a> to start earning with Task Tube!
+        </p>
     </div>
 
-    <!-- CTA Banner -->
-    <section class="cta-banner">
-        <h2>Need Help? Contact Us Now!</h2>
-        <a href="https://wa.me/+17655329001" target="_blank" class="btn" onclick="console.log('CTA button clicked')">Message Us on WhatsApp</a>
-    </section>
-
-    <!-- Notice Popup -->
     <div class="notice" id="notice">
         <span class="close-btn" onclick="closeNotice()" aria-label="Close notice">×</span>
         <h2>Contact Task Tube</h2>
-        <p>Need assistance? Our support team is here to help you 24/7 via WhatsApp. Reach out today to get started or resolve any issues!</p>
-        <a href="https://wa.me/+17655329001" target="_blank" class="btn" onclick="console.log('Notice button clicked')">Message Us</a>
+        <p>Need assistance? Our support team is here to help you 24/7 via WhatsApp.</p>
+        <p>Reach out today to get started or resolve any issues!</p>
     </div>
 
     <?php include 'inc/footer.php'; ?>
@@ -413,7 +261,7 @@
             const currentPath = window.location.pathname.split('/').pop();
             const links = document.querySelectorAll('.ham-menu ul li a');
             links.forEach(link => {
-                if (link.getAttribute('href') === currentPath || (currentPath === '' && link.getAttribute('href') === 'index.php')) {
+                if (link.getAttribute('href') === currentPath) {
                     link.parentElement.classList.add('active');
                 }
             });
@@ -434,7 +282,7 @@
                 setTimeout(() => {
                     notice.style.display = 'block';
                     setNoticeShown();
-                }, 2000); // Match index.php timing
+                }, 1000);
             }
         }
 
@@ -445,12 +293,8 @@
 
         window.addEventListener('load', showNotice);
 
-        // Prevent right-click only on non-link elements
-        document.addEventListener('contextmenu', e => {
-            if (!e.target.closest('a')) {
-                e.preventDefault();
-            }
-        });
+        // Prevent right-click
+        document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
 </body>
 </html>
