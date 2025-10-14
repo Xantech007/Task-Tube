@@ -47,10 +47,10 @@ if ($verification_status !== 'verified') {
     exit;
 }
 
-// Fetch region settings for labels and rate
+// Fetch region settings for labels, rate, and currency
 try {
     $stmt = $pdo->prepare("
-        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel, rate
+        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel, rate, COALESCE(currency, '$') AS currency
         FROM region_settings 
         WHERE country = ?
     ");
@@ -62,7 +62,8 @@ try {
         $ch_name = htmlspecialchars($region_settings['ch_name']);
         $ch_value = htmlspecialchars($region_settings['ch_value']);
         $channel_label = htmlspecialchars($region_settings['channel']);
-        $rate = floatval($region_settings['rate']); // Get the rate
+        $rate = floatval($region_settings['rate']);
+        $currency = htmlspecialchars($region_settings['currency']);
     } else {
         // Fallback values if no region settings are found
         $section_header = 'Withdraw Funds';
@@ -70,6 +71,7 @@ try {
         $ch_value = 'Bank Account';
         $channel_label = 'Bank';
         $rate = 1.0; // Default rate of 1 (no conversion)
+        $currency = '$'; // Default currency symbol
         error_log('No region settings found for country: ' . $user_country, 3, '../debug.log');
     }
 } catch (PDOException $e) {
@@ -80,6 +82,7 @@ try {
     $ch_value = 'Bank Account';
     $channel_label = 'Bank';
     $rate = 1.0; // Default rate of 1 (no conversion)
+    $currency = '$'; // Default currency symbol
 }
 
 // Process withdrawal
@@ -109,15 +112,15 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             // Generate unique reference number
             $ref_number = strtoupper(substr(uniqid(), 0, 10));
 
-            // Insert withdrawal record with adjusted amount
+            // Insert withdrawal record with adjusted amount and currency
             $stmt = $pdo->prepare("
-                INSERT INTO withdrawals (user_id, amount, channel, bank_name, bank_account, ref_number, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                INSERT INTO withdrawals (user_id, amount, channel, bank_name, bank_account, ref_number, status, currency)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
             ");
-            $stmt->execute([$_SESSION['user_id'], $adjusted_amount, $channel, $bank_name, $bank_account, $ref_number]);
+            $stmt->execute([$_SESSION['user_id'], $adjusted_amount, $channel, $bank_name, $bank_account, $ref_number, $currency]);
 
             $pdo->commit();
-            error_log('Withdrawal request created for user ID: ' . $_SESSION['user_id'] . ', raw amount: ' . $amount . ', adjusted amount: ' . $adjusted_amount . ', channel: ' . $channel, 3, '../debug.log');
+            error_log('Withdrawal request created for user ID: ' . $_SESSION['user_id'] . ', raw amount: ' . $amount . ', adjusted amount: ' . $adjusted_amount . ', currency: ' . $currency . ', channel: ' . $channel, 3, '../debug.log');
         } catch (PDOException $e) {
             $pdo->rollBack();
             error_log('Withdrawal error for user ID: ' . $_SESSION['user_id'] . ': ' . $e->getMessage(), 3, '../debug.log');
@@ -467,7 +470,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                 <button class="back-btn" onclick="window.location.href='home.php'">Back to Home</button>
             <?php else: ?>
                 <h2>Withdrawal Request Submitted!</h2>
-                <div class="amount">$<?php echo number_format($adjusted_amount, 2); ?></div>
+                <div class="amount"><?php echo htmlspecialchars($currency); ?><?php echo number_format($adjusted_amount, 2); ?></div>
                 <table class="receipt-table">
                     <tr>
                         <th>Ref Number</th>
