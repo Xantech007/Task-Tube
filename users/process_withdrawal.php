@@ -2,8 +2,8 @@
 session_start();
 require_once '../database/conn.php';
 
-// Set time zone to WAT
-date_default_timezone_set('Africa/Lagos');
+// Set time zone to UTC for request time
+date_default_timezone_set('UTC');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -259,8 +259,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             color: var(--accent-color);
         }
 
-        .receipt-card h2::before {
-            content: '✅';
+        .receipt-card h2 i {
             font-size: 1.2rem;
             margin-right: 8px;
         }
@@ -309,7 +308,8 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.3s ease, transform 0.2s ease;
-            margin-top: 20px;
+            margin-top: 10px;
+            margin-right: 10px;
         }
 
         .back-btn:hover {
@@ -463,6 +463,12 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             transform: scale(1.02);
         }
 
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 16px;
@@ -489,6 +495,15 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                 right: 10px;
                 top: 10px;
             }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .back-btn, .print-btn {
+                margin-right: 0;
+            }
         }
     </style>
 </head>
@@ -499,7 +514,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             <div style="display: flex; align-items: center;">
                 <img src="img/top.png" alt="Cash Tube Logo" aria-label="Cash Tube Logo">
                 <div class="header-text">
-                    <h1>Withdrawal Receipt for <?php echo $username; ?></h1>
+                    <h1>Withdrawal Receipt for <?php echo htmlspecialchars($username); ?></h1>
                     <p>Detailed summary of your withdrawal request</p>
                 </div>
             </div>
@@ -511,7 +526,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                 <p class="error"><?php echo htmlspecialchars($error); ?></p>
                 <button class="back-btn" onclick="window.location.href='home.php'">Back to Home</button>
             <?php else: ?>
-                <h2>Withdrawal Request Submitted!</h2>
+                <h2><i class="fas fa-check-circle"></i> Withdrawal Request Submitted!</h2>
                 <div class="amount"><?php echo htmlspecialchars($currency_symbol) . number_format($converted_amount, 2); ?></div>
                 <table class="receipt-table">
                     <tr>
@@ -523,11 +538,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                         <td>$<?php echo number_format($amount, 2); ?></td>
                     </tr>
                     <tr>
-                        <th>Conversion Rate</th>
-                        <td>1 USD = <?php echo htmlspecialchars($currency_symbol) . number_format($rate, 2); ?></td>
-                    </tr>
-                    <tr>
-                        <th>Converted Amount</th>
+                        <th>Amount to Receive</th>
                         <td><?php echo htmlspecialchars($currency_symbol) . number_format($converted_amount, 2); ?></td>
                     </tr>
                     <tr>
@@ -540,7 +551,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                     </tr>
                     <tr>
                         <th>Request Time</th>
-                        <td><?php echo date('F j, Y, g:i A T'); ?></td>
+                        <td><?php echo gmdate('F j, Y, g:i A'); ?> UTC</td>
                     </tr>
                     <tr>
                         <th><?php echo htmlspecialchars($channel_label); ?></th>
@@ -566,14 +577,16 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                 <div class="notes-section">
                     <h3>Important Notes:</h3>
                     <ul>
-                        <li>Your withdrawal request is pending approval and will be processed within 24-48 hours.</li>
+                        <li>Your withdrawal request is pending approval and will be processed within 2 hours.</li>
                         <li>Please ensure your bank details are correct to avoid delays.</li>
-                        <li>If you have any questions, contact support via the app.</li>
+                        <li>If you have any questions, contact support via our website at <a href="support.php">support.php</a>.</li>
                         <li>Conversion rates are based on current market values and may vary slightly upon processing.</li>
                     </ul>
                 </div>
-                <button class="back-btn" onclick="window.location.href='home.php'">Back to Home</button>
-                <button class="print-btn" onclick="window.print()">Print Receipt</button>
+                <div class="button-group">
+                    <button class="back-btn" onclick="window.location.href='home.php'">Back to Home</button>
+                    <button class="print-btn" onclick="window.print()">Print Receipt</button>
+                </div>
             <?php endif; ?>
         </div>
 
