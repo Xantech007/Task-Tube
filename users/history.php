@@ -66,12 +66,12 @@ try {
 try {
     $stmt = $pdo->prepare("
         SELECT action, amount, created_at, NULL AS ref_number, NULL AS status, 
-               NULL AS channel, NULL AS bank_name, NULL AS bank_account, 'activity' AS source
+               NULL AS channel, NULL AS bank_name, NULL AS bank_account, 'activity' AS source, NULL AS currency
         FROM activities 
         WHERE user_id = ?
         UNION ALL
         SELECT 'Withdrawal' AS action, amount, created_at, ref_number, status, 
-               channel, bank_name, bank_account, 'withdrawal' AS source
+               channel, bank_name, bank_account, 'withdrawal' AS source, currency
         FROM withdrawals 
         WHERE user_id = ?
         ORDER BY created_at DESC
@@ -413,7 +413,7 @@ try {
             <div style="display: flex; align-items: center;">
                 <img src="img/top.png" alt="Task Tube Logo" aria-label="Task Tube Logo">
                 <div class="header-text">
-                    <h1>Activity History, <?php echo $username; ?>!</h1>
+                    <h1>Activity History, <?php echo htmlspecialchars($username); ?>!</h1>
                     <p>View your past actions and withdrawals.</p>
                 </div>
             </div>
@@ -448,7 +448,12 @@ try {
                                             -
                                         <?php endif; ?>
                                     </td>
-                                    <td class="amount">$<?php echo number_format($item['amount'], 2); ?></td>
+                                    <td class="amount">
+                                        <?php
+                                        $currency = $item['source'] === 'withdrawal' && !empty($item['currency']) ? htmlspecialchars($item['currency']) : '$';
+                                        echo $currency . number_format($item['amount'], 2);
+                                        ?>
+                                    </td>
                                     <td>
                                         <?php if ($item['source'] === 'withdrawal'): ?>
                                             <?php
@@ -464,7 +469,7 @@ try {
                                             -
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo gmdate('F j, Y, g:i A T', strtotime($item['created_at'])); ?></td>
+                                    <td><?php echo gmdate('F j, Y, g:i A', strtotime($item['created_at'])) . ' UTC'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
