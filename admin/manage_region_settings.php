@@ -23,16 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($action === 'add_dashboard') {
             $country = trim($_POST['country']);
             $section_header = trim($_POST['section_header']);
-            $crypto = isset($_POST['crypto']) ? 1 : 0;
             $channel = trim($_POST['channel']);
             $ch_name = trim($_POST['ch_name']);
             $ch_value = trim($_POST['ch_value']);
-            $rate = floatval($_POST['rate']);
 
             // Validation
-            if (empty($country) || empty($section_header) || empty($ch_name) || empty($ch_value) || 
-                ($crypto == 1 && empty($channel)) || $rate <= 0) {
-                $_SESSION['error'] = "All Dashboard fields are required, Channel is required if Crypto is enabled, and Rate must be greater than 0.";
+            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value)) {
+                $_SESSION['error'] = "All Dashboard fields are required.";
             } else {
                 // Check if country already exists
                 $stmt = $pdo->prepare("SELECT id FROM region_settings WHERE country = ?");
@@ -41,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['error'] = "Region settings for this country already exist.";
                 } else {
                     $stmt = $pdo->prepare("
-                        INSERT INTO region_settings (country, section_header, crypto, channel, ch_name, ch_value, rate)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO region_settings (country, section_header, channel, ch_name, ch_value)
+                        VALUES (?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$country, $section_header, $crypto, $channel, $ch_name, $ch_value, $rate]);
+                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value]);
                     $_SESSION['success'] = "Dashboard settings added successfully.";
                 }
             }
@@ -106,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Fetch all region settings
 try {
     $stmt = $pdo->prepare("
-        SELECT id, country, section_header, crypto, channel, ch_name, ch_value, verify_ch, vc_value, 
+        SELECT id, country, section_header, channel, ch_name, ch_value, verify_ch, vc_value, 
                verify_ch_name, verify_ch_value, verify_medium, vcn_value, vcv_value, verify_currency, 
                verify_amount, rate
         FROM region_settings
@@ -247,33 +244,6 @@ try {
             cursor: pointer;
         }
 
-        .add-form .crypto-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            width: 100%;
-            gap: 10px;
-        }
-
-        .add-form .crypto-toggle label {
-            font-size: 13px;
-            color: #333;
-            order: -1;
-        }
-
-        .add-form .crypto-toggle input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-        }
-
-        .add-form input#channel {
-            display: none;
-        }
-
-        .add-form input#channel.active {
-            display: block;
-        }
-
         .add-form button {
             width: 200px;
             grid-column: 1 / -1;
@@ -360,25 +330,6 @@ try {
             }
         }
     </style>
-    <script>
-        // Toggle channel input visibility based on crypto checkbox
-        document.addEventListener('DOMContentLoaded', function() {
-            const cryptoCheckbox = document.getElementById('crypto');
-            const channelInput = document.getElementById('channel');
-            
-            function toggleChannelInput() {
-                if (cryptoCheckbox.checked) {
-                    channelInput.classList.add('active');
-                } else {
-                    channelInput.classList.remove('active');
-                    channelInput.value = '';
-                }
-            }
-
-            cryptoCheckbox.addEventListener('change', toggleChannelInput);
-            toggleChannelInput();
-        });
-    </script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -408,15 +359,10 @@ try {
                     <option value="<?php echo htmlspecialchars($country); ?>"><?php echo htmlspecialchars($country); ?></option>
                 <?php endforeach; ?>
             </select>
-            <input type="text" name="section_header" placeholder="Section Heading (e.g., Withdraw with bank/crypto)" required>
-            <div class="crypto-toggle">
-                <label for="crypto">Enable Crypto</label>
-                <input type="checkbox" id="crypto" name="crypto">
-            </div>
-            <input type="text" id="channel" name="channel" placeholder="Channel (e.g., Coin)">
-            <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name/Network)" required>
-            <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number/Wallet Address)" required>
-            <input type="number" name="rate" placeholder="Conversion Rate (e.g., 1000 for 1 USD = 1000 NGN)" step="0.01" required>
+            <input type="text" name="section_header" placeholder="Section Heading (e.g., Withdraw with bank)" required>
+            <input type="text" name="channel" placeholder="Channel (e.g., Bank)" required>
+            <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name)" required>
+            <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number)" required>
             <input type="hidden" name="action" value="add_dashboard">
             <button type="submit" class="action-btn add">Add Dashboard Settings</button>
         </form>
@@ -432,11 +378,9 @@ try {
                             <th>ID</th>
                             <th>Country</th>
                             <th>Section Heading</th>
-                            <th>Crypto</th>
                             <th>Channel</th>
                             <th>Channel Name</th>
                             <th>Channel Number</th>
-                            <th>Rate</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -446,11 +390,9 @@ try {
                                 <td><?php echo htmlspecialchars($setting['id']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['country']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['section_header']); ?></td>
-                                <td><?php echo $setting['crypto'] ? 'On' : 'Off'; ?></td>
-                                <td><?php echo htmlspecialchars($setting['channel'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($setting['channel']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_name']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_value']); ?></td>
-                                <td><?php echo number_format($setting['rate'], 2); ?></td>
                                 <td class="action-buttons">
                                     <a href="edit_region_setting.php?id=<?php echo $setting['id']; ?>&section=dashboard" class="action-btn edit">Edit</a>
                                     <form method="POST" style="display: inline;">
