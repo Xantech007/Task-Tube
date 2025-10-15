@@ -27,11 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $channel = trim($_POST['channel']);
             $ch_name = trim($_POST['ch_name']);
             $ch_value = trim($_POST['ch_value']);
+            $rate = floatval($_POST['rate']);
 
             // Validation
             if (empty($country) || empty($section_header) || empty($ch_name) || empty($ch_value) || 
-                ($crypto == 1 && empty($channel))) {
-                $_SESSION['error'] = "All Dashboard fields are required, and Channel is required if Crypto is enabled.";
+                ($crypto == 1 && empty($channel)) || $rate <= 0) {
+                $_SESSION['error'] = "All Dashboard fields are required, Channel is required if Crypto is enabled, and Rate must be greater than 0.";
             } else {
                 // Check if country already exists
                 $stmt = $pdo->prepare("SELECT id FROM region_settings WHERE country = ?");
@@ -40,10 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['error'] = "Region settings for this country already exist.";
                 } else {
                     $stmt = $pdo->prepare("
-                        INSERT INTO region_settings (country, section_header, crypto, channel, ch_name, ch_value)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO region_settings (country, section_header, crypto, channel, ch_name, ch_value, rate)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$country, $section_header, $crypto, $channel, $ch_name, $ch_value]);
+                    $stmt->execute([$country, $section_header, $crypto, $channel, $ch_name, $ch_value, $rate]);
                     $_SESSION['success'] = "Dashboard settings added successfully.";
                 }
             }
@@ -58,23 +59,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $vcv_value = trim($_POST['vcv_value']);
             $verify_currency = trim($_POST['verify_currency']);
             $verify_amount = floatval($_POST['verify_amount']);
+            $rate = floatval($_POST['rate']);
 
             // Validation
             if (empty($country) || empty($verify_ch) || empty($vc_value) || empty($verify_ch_name) || 
                 empty($verify_ch_value) || empty($vcn_value) || empty($vcv_value) || 
-                empty($verify_currency) || $verify_amount <= 0) {
-                $_SESSION['error'] = "All Verification fields except Verify Medium are required, and amount must be greater than 0.";
+                empty($verify_currency) || $verify_amount <= 0 || $rate <= 0) {
+                $_SESSION['error'] = "All Verification fields except Verify Medium are required, Amount and Rate must be greater than 0.";
             } else {
                 // Update existing row for the country
                 $stmt = $pdo->prepare("
                     UPDATE region_settings 
                     SET verify_ch = ?, vc_value = ?, verify_ch_name = ?, verify_ch_value = ?, 
-                        verify_medium = ?, vcn_value = ?, vcv_value = ?, verify_currency = ?, verify_amount = ?
+                        verify_medium = ?, vcn_value = ?, vcv_value = ?, verify_currency = ?, 
+                        verify_amount = ?, rate = ?
                     WHERE country = ?
                 ");
                 $result = $stmt->execute([
                     $verify_ch, $vc_value, $verify_ch_name, $verify_ch_value, $verify_medium, 
-                    $vcn_value, $vcv_value, $verify_currency, $verify_amount, $country
+                    $vcn_value, $vcv_value, $verify_currency, $verify_amount, $rate, $country
                 ]);
                 if ($stmt->rowCount() === 0) {
                     $_SESSION['error'] = "No Dashboard settings found for this country. Add Dashboard settings first.";
@@ -105,7 +108,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT id, country, section_header, crypto, channel, ch_name, ch_value, verify_ch, vc_value, 
                verify_ch_name, verify_ch_value, verify_medium, vcn_value, vcv_value, verify_currency, 
-               verify_amount
+               verify_amount, rate
         FROM region_settings
         ORDER BY country
     ");
@@ -413,6 +416,7 @@ try {
             <input type="text" id="channel" name="channel" placeholder="Channel (e.g., Coin)">
             <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name/Network)" required>
             <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number/Wallet Address)" required>
+            <input type="number" name="rate" placeholder="Conversion Rate (e.g., 1000 for 1 USD = 1000 NGN)" step="0.01" required>
             <input type="hidden" name="action" value="add_dashboard">
             <button type="submit" class="action-btn add">Add Dashboard Settings</button>
         </form>
@@ -432,6 +436,7 @@ try {
                             <th>Channel</th>
                             <th>Channel Name</th>
                             <th>Channel Number</th>
+                            <th>Rate</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -445,6 +450,7 @@ try {
                                 <td><?php echo htmlspecialchars($setting['channel'] ?? ''); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_name']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_value']); ?></td>
+                                <td><?php echo number_format($setting['rate'], 2); ?></td>
                                 <td class="action-buttons">
                                     <a href="edit_region_setting.php?id=<?php echo $setting['id']; ?>&section=dashboard" class="action-btn edit">Edit</a>
                                     <form method="POST" style="display: inline;">
@@ -478,6 +484,7 @@ try {
             <input type="text" name="vcv_value" placeholder="Channel Number Value (e.g., 8012345678)" required>
             <input type="text" name="verify_currency" placeholder="Currency (e.g., NGN)" required>
             <input type="number" name="verify_amount" placeholder="Charges (e.g., 15000)" step="0.01" required>
+            <input type="number" name="rate" placeholder="Conversion Rate (e.g., 1000 for 1 USD = 1000 NGN)" step="0.01" required>
             <input type="hidden" name="action" value="add_verification">
             <button type="submit" class="action-btn add">Add Verification Settings</button>
         </form>
@@ -501,6 +508,7 @@ try {
                             <th>Channel Number Value</th>
                             <th>Currency</th>
                             <th>Charges</th>
+                            <th>Rate</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -518,6 +526,7 @@ try {
                                 <td><?php echo htmlspecialchars($setting['vcv_value']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['verify_currency']); ?></td>
                                 <td><?php echo number_format($setting['verify_amount'], 2); ?></td>
+                                <td><?php echo number_format($setting['rate'], 2); ?></td>
                                 <td class="action-buttons">
                                     <a href="edit_region_setting.php?id=<?php echo $setting['id']; ?>&section=verification" class="action-btn edit">Edit</a>
                                     <form method="POST" style="display: inline;">
