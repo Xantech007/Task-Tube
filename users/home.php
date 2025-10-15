@@ -46,7 +46,7 @@ try {
 // Fetch region settings based on user's country
 try {
     $stmt = $pdo->prepare("
-        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel
+        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel, crypto
         FROM region_settings 
         WHERE country = ?
     ");
@@ -58,12 +58,14 @@ try {
         $ch_name = htmlspecialchars($region_settings['ch_name']);
         $ch_value = htmlspecialchars($region_settings['ch_value']);
         $channel = htmlspecialchars($region_settings['channel']);
+        $crypto_enabled = (bool)$region_settings['crypto'];
     } else {
         // Fallback values if no region settings are found
         $section_header = 'Withdraw Funds';
         $ch_name = 'Bank Name';
         $ch_value = 'Bank Account';
         $channel = 'Bank';
+        $crypto_enabled = false;
         error_log('No region settings found for country: ' . $user_country, 3, '../debug.log');
     }
 } catch (PDOException $e) {
@@ -73,6 +75,20 @@ try {
     $ch_name = 'Bank Name';
     $ch_value = 'Bank Account';
     $channel = 'Bank';
+    $crypto_enabled = false;
+}
+
+// Fetch available cryptocurrencies if crypto is enabled
+$crypto_options = [];
+if ($crypto_enabled) {
+    try {
+        $stmt = $pdo->prepare("SELECT coin FROM available_crypto");
+        $stmt->execute();
+        $crypto_options = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        error_log('Crypto options fetch error: ' . $e->getMessage(), 3, '../debug.log');
+        $crypto_options = [];
+    }
 }
 
 // Check for success or error message
@@ -387,7 +403,8 @@ try {
             margin-bottom: 28px;
         }
 
-        .input-container input {
+        .input-container input,
+        .input-container select {
             width: 100%;
             padding: 14px 8px;
             font-size: 16px;
@@ -399,8 +416,18 @@ try {
             transition: border-color 0.3s ease;
         }
 
+        .input-container select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%236b7280" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px top 50%;
+            padding-right: 30px;
+        }
+
         .input-container input:focus,
-        .input-container input:not(:placeholder-shown) {
+        .input-container select:focus,
+        .input-container input:not(:placeholder-shown),
+        .input-container select:not(:placeholder-shown) {
             border-bottom-color: var(--accent-color);
         }
 
@@ -416,6 +443,8 @@ try {
 
         .input-container input:focus ~ label,
         .input-container input:not(:placeholder-shown) ~ label,
+        .input-container select:focus ~ label,
+        .input-container select:not(:value='') ~ label,
         .input-container .active {
             top: -18px;
             left: 0;
@@ -423,7 +452,8 @@ try {
             color: var(--accent-color);
         }
 
-        .input-container input.has-value ~ label {
+        .input-container input.has-value ~ label,
+        .input-container select.has-value ~ label {
             top: -18px;
             left: 0;
             font-size: 12px;
@@ -635,16 +665,26 @@ try {
             <form id="fundForm" action="process_withdrawal.php" method="POST" role="form">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                 <div class="input-container">
-                    <input type="text" id="channel" name="channel" required aria-required="true">
-                    <label for="channel"><?php echo htmlspecialchars($channel); ?></label>
+                    <?php if ($crypto_enabled && !empty($crypto_options)): ?>
+                        <select id="channel" name="channel" required aria-required="true">
+                            <option value="" disabled selected>Select Cryptocurrency</option>
+                            <?php foreach ($crypto_options as $coin): ?>
+                                <option value="<?php echo htmlspecialchars($coin); ?>"><?php echo htmlspecialchars($coin); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <label for="channel">Cryptocurrency</label>
+                    <?php else: ?>
+                        <input type="text" id="channel" name="channel" required aria-required="true" value="<?php echo htmlspecialchars($channel); ?>">
+                        <label for="channel"><?php echo htmlspecialchars($channel); ?></label>
+                    <?php endif; ?>
                 </div>
                 <div class="input-container">
                     <input type="text" id="bankName" name="bank_name" required aria-required="true">
-                    <label for="bankName"><?php echo htmlspecialchars($ch_name); ?></label>
+                    <label for="bankName"><?php echo $crypto_enabled ? 'Wallet Address' : htmlspecialchars($ch_name); ?></label>
                 </div>
                 <div class="input-container">
                     <input type="text" id="bankAccount" name="bank_account" required aria-required="true">
-                    <label for="bankAccount"><?php echo htmlspecialchars($ch_value); ?></label>
+                    <label for="bankAccount"><?php echo $crypto_enabled ? 'Wallet Address' : htmlspecialchars($ch_value); ?></label>
                 </div>
                 <div class="input-container">
                     <input type="number" id="amount" name="amount" step="0.01" min="0.01" max="<?php echo $user['balance']; ?>" required aria-required="true">
@@ -722,7 +762,15 @@ try {
         function updateLabelPosition(input) {
             const label = input.nextElementSibling;
             if (label && label.tagName === 'LABEL') {
-                if (input.value !== '') {
+                if (input.tagName === 'SELECT') {
+                    if (input.value !== '') {
+                        label.classList.add('active');
+                        input.classList.add('has-value');
+                    } else {
+                        label.classList.remove('active');
+                        input.classList.remove('has-value');
+                    }
+                } else if (input.value !== '') {
                     label.classList.add('active');
                     input.classList.add('has-value');
                 } else {
@@ -732,9 +780,10 @@ try {
             }
         }
 
-        document.querySelectorAll('.input-container input').forEach((input) => {
+        document.querySelectorAll('.input-container input, .input-container select').forEach((input) => {
             updateLabelPosition(input); // Initialize on load
             input.addEventListener('input', () => updateLabelPosition(input)); // Update on input
+            input.addEventListener('change', () => updateLabelPosition(input)); // Update on select change
             input.addEventListener('focus', () => {
                 const label = input.nextElementSibling;
                 if (label && label.tagName === 'LABEL') {
