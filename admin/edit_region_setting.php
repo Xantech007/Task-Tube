@@ -26,9 +26,9 @@ $section = $_GET['section'];
 // Fetch the region setting by ID
 try {
     $stmt = $pdo->prepare("
-        SELECT id, country, section_header, crypto, channel, ch_name, ch_value, verify_ch, vc_value, 
+        SELECT id, country, section_header, channel, ch_name, ch_value, verify_ch, vc_value, 
                verify_ch_name, verify_ch_value, verify_medium, vcn_value, vcv_value, verify_currency, 
-               verify_amount
+               verify_amount, rate
         FROM region_settings
         WHERE id = ?
     ");
@@ -55,15 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($section === 'dashboard') {
             $country = trim($_POST['country']);
             $section_header = trim($_POST['section_header']);
-            $crypto = isset($_POST['crypto']) ? 1 : 0;
             $channel = trim($_POST['channel']);
             $ch_name = trim($_POST['ch_name']);
             $ch_value = trim($_POST['ch_value']);
 
             // Validation
-            if (empty($country) || empty($section_header) || empty($ch_name) || empty($ch_value) || 
-                ($crypto == 1 && empty($channel))) {
-                $_SESSION['error'] = "All Dashboard fields are required, and Channel is required if Crypto is enabled.";
+            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value)) {
+                $_SESSION['error'] = "All Dashboard fields are required.";
             } else {
                 // Check if country already exists for another ID
                 $stmt = $pdo->prepare("SELECT id FROM region_settings WHERE country = ? AND id != ?");
@@ -73,10 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $stmt = $pdo->prepare("
                         UPDATE region_settings 
-                        SET country = ?, section_header = ?, crypto = ?, channel = ?, ch_name = ?, ch_value = ?
+                        SET country = ?, section_header = ?, channel = ?, ch_name = ?, ch_value = ?
                         WHERE id = ?
                     ");
-                    $stmt->execute([$country, $section_header, $crypto, $channel, $ch_name, $ch_value, $id]);
+                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value, $id]);
                     $_SESSION['success'] = "Dashboard settings updated successfully.";
                 }
             }
@@ -90,22 +88,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $vcv_value = trim($_POST['vcv_value']);
             $verify_currency = trim($_POST['verify_currency']);
             $verify_amount = floatval($_POST['verify_amount']);
+            $rate = floatval($_POST['rate']);
 
             // Validation
             if (empty($verify_ch) || empty($vc_value) || empty($verify_ch_name) || 
                 empty($verify_ch_value) || empty($vcn_value) || empty($vcv_value) || 
-                empty($verify_currency) || $verify_amount <= 0) {
-                $_SESSION['error'] = "All Verification fields except Verify Medium are required, and amount must be greater than 0.";
+                empty($verify_currency) || $verify_amount <= 0 || $rate <= 0) {
+                $_SESSION['error'] = "All Verification fields except Verify Medium are required, and Amount and Rate must be greater than 0.";
             } else {
                 $stmt = $pdo->prepare("
                     UPDATE region_settings 
                     SET verify_ch = ?, vc_value = ?, verify_ch_name = ?, verify_ch_value = ?, 
-                        verify_medium = ?, vcn_value = ?, vcv_value = ?, verify_currency = ?, verify_amount = ?
+                        verify_medium = ?, vcn_value = ?, vcv_value = ?, verify_currency = ?, 
+                        verify_amount = ?, rate = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([
                     $verify_ch, $vc_value, $verify_ch_name, $verify_ch_value, $verify_medium, 
-                    $vcn_value, $vcv_value, $verify_currency, $verify_amount, $id
+                    $vcn_value, $vcv_value, $verify_currency, $verify_amount, $rate, $id
                 ]);
                 $_SESSION['success'] = "Verification settings updated successfully.";
             }
@@ -186,8 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .edit-form input[type="text"],
         .edit-form input[type="number"],
-        .edit-form select,
-        .edit-form input[type="checkbox"] {
+        .edit-form select {
             width: 100%;
             padding: 6px;
             border: 1px solid #ddd;
@@ -199,33 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .edit-form select {
             background-color: #fff;
             cursor: pointer;
-        }
-
-        .edit-form .crypto-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            width: 100%;
-            gap: 10px;
-        }
-
-        .edit-form .crypto-toggle label {
-            font-size: 13px;
-            color: #333;
-            order: -1;
-        }
-
-        .edit-form .crypto-toggle input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-        }
-
-        .edit-form input#channel {
-            display: none;
-        }
-
-        .edit-form input#channel.active {
-            display: block;
         }
 
         .edit-form button {
@@ -275,24 +247,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const cryptoCheckbox = document.getElementById('crypto');
-            const channelInput = document.getElementById('channel');
-            
-            function toggleChannelInput() {
-                if (cryptoCheckbox.checked) {
-                    channelInput.classList.add('active');
-                } else {
-                    channelInput.classList.remove('active');
-                    channelInput.value = '';
-                }
-            }
-
-            cryptoCheckbox.addEventListener('change', toggleChannelInput);
-            toggleChannelInput();
-        });
-    </script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -320,14 +274,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <input type="text" name="section_header" placeholder="Section Heading (e.g., Withdraw with bank/crypto)" value="<?php echo htmlspecialchars($setting['section_header']); ?>" required>
-                <div class="crypto-toggle">
-                    <label for="crypto">Enable Crypto</label>
-                    <input type="checkbox" id="crypto" name="crypto" <?php echo $setting['crypto'] ? 'checked' : ''; ?>>
-                </div>
-                <input type="text" id="channel" name="channel" placeholder="Channel (e.g., Coin)" value="<?php echo htmlspecialchars($setting['channel'] ?? ''); ?>">
-                <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name/Network)" value="<?php echo htmlspecialchars($setting['ch_name']); ?>" required>
-                <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number/Wallet Address)" value="<?php echo htmlspecialchars($setting['ch_value']); ?>" required>
+                <input type="text" name="section_header" placeholder="Section Heading (e.g., Withdraw with bank)" value="<?php echo htmlspecialchars($setting['section_header']); ?>" required>
+                <input type="text" name="channel" placeholder="Channel (e.g., Bank)" value="<?php echo htmlspecialchars($setting['channel']); ?>" required>
+                <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name)" value="<?php echo htmlspecialchars($setting['ch_name']); ?>" required>
+                <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number)" value="<?php echo htmlspecialchars($setting['ch_value']); ?>" required>
                 <button type="submit">Update Dashboard Settings</button>
             </form>
         <?php elseif ($section === 'verification'): ?>
@@ -341,6 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" name="vcv_value" placeholder="Channel Number Value (e.g., 8012345678)" value="<?php echo htmlspecialchars($setting['vcv_value']); ?>" required>
                 <input type="text" name="verify_currency" placeholder="Currency (e.g., NGN)" value="<?php echo htmlspecialchars($setting['verify_currency']); ?>" required>
                 <input type="number" name="verify_amount" placeholder="Charges (e.g., 15000)" step="0.01" value="<?php echo htmlspecialchars($setting['verify_amount']); ?>" required>
+                <input type="number" name="rate" placeholder="Conversion Rate (e.g., 1000 for 1 USD = 1000 NGN)" step="0.01" value="<?php echo htmlspecialchars($setting['rate']); ?>" required>
                 <button type="submit">Update Verification Settings</button>
             </form>
         <?php endif; ?>
