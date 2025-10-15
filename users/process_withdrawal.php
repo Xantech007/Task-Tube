@@ -50,7 +50,7 @@ if ($verification_status !== 'verified') {
 // Fetch region settings for labels
 try {
     $stmt = $pdo->prepare("
-        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel, verify_currency, rate
+        SELECT section_header, ch_name, ch_value, COALESCE(channel, 'Bank') AS channel, withdraw_currency, rate
         FROM region_settings 
         WHERE country = ?
     ");
@@ -62,7 +62,7 @@ try {
         $ch_name = htmlspecialchars($region_settings['ch_name']);
         $ch_value = htmlspecialchars($region_settings['ch_value']);
         $channel_label = htmlspecialchars($region_settings['channel']);
-        $currency_symbol = htmlspecialchars($region_settings['verify_currency']);
+        $currency_symbol = htmlspecialchars($region_settings['withdraw_currency']);
         $rate = (float)$region_settings['rate'];
     } else {
         // Fallback values if no region settings are found
