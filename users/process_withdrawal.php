@@ -579,7 +579,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                     <ul>
                         <li>Your withdrawal request is pending approval and will be processed within 2 hours.</li>
                         <li>Please ensure your bank details are correct to avoid delays.</li>
-                        <li>If you have any questions, contact support via our <a href="support.php">Contact Support</a>.</li>
+                        <li>If you have any questions, contact support via our <a href="support.php">support page</a>.</li>
                         <li>Conversion rates are based on current market values and may vary slightly upon processing.</li>
                     </ul>
                 </div>
