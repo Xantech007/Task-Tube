@@ -91,6 +91,7 @@ $bank_name = filter_var($_POST['bank_name'] ?? '', FILTER_SANITIZE_STRING);
 $bank_account = filter_var($_POST['bank_account'] ?? '', FILTER_SANITIZE_STRING);
 $amount = filter_var($_POST['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
 $error = null;
+$new_balance = $balance; // Default to original balance in case of error
 
 if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount > 0) {
     if ($amount > $balance) {
@@ -125,6 +126,7 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             $pdo->rollBack();
             error_log('Withdrawal error for user ID: ' . $_SESSION['user_id'] . ': ' . $e->getMessage(), 3, '../debug.log');
             $error = 'An error occurred while processing your withdrawal.';
+            $new_balance = $balance; // Reset to original if transaction fails
         }
     }
 } else {
@@ -421,6 +423,46 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             transition: all 0.3s ease;
         }
 
+        .notes-section {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--subtext-color);
+            text-align: left;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .notes-section h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .notes-section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        .print-btn {
+            width: 100%;
+            max-width: 200px;
+            padding: 14px;
+            background: #007bff;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .print-btn:hover {
+            background: #0056b3;
+            transform: scale(1.02);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 16px;
@@ -457,8 +499,8 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
             <div style="display: flex; align-items: center;">
                 <img src="img/top.png" alt="Cash Tube Logo" aria-label="Cash Tube Logo">
                 <div class="header-text">
-                    <h1>Withdrawal Receipt</h1>
-                    <p>Details of your withdrawal</p>
+                    <h1>Withdrawal Receipt for <?php echo $username; ?></h1>
+                    <p>Detailed summary of your withdrawal request</p>
                 </div>
             </div>
             <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">Toggle Dark Mode</button>
@@ -472,6 +514,26 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                 <h2>Withdrawal Request Submitted!</h2>
                 <div class="amount"><?php echo htmlspecialchars($currency_symbol) . number_format($converted_amount, 2); ?></div>
                 <table class="receipt-table">
+                    <tr>
+                        <th>Original Balance (USD)</th>
+                        <td>$<?php echo number_format($balance, 2); ?></td>
+                    </tr>
+                    <tr>
+                        <th>Withdrawn Amount (USD)</th>
+                        <td>$<?php echo number_format($amount, 2); ?></td>
+                    </tr>
+                    <tr>
+                        <th>Conversion Rate</th>
+                        <td>1 USD = <?php echo htmlspecialchars($currency_symbol) . number_format($rate, 2); ?></td>
+                    </tr>
+                    <tr>
+                        <th>Converted Amount</th>
+                        <td><?php echo htmlspecialchars($currency_symbol) . number_format($converted_amount, 2); ?></td>
+                    </tr>
+                    <tr>
+                        <th>New Balance (USD)</th>
+                        <td>$<?php echo number_format($new_balance, 2); ?></td>
+                    </tr>
                     <tr>
                         <th>Ref Number</th>
                         <td><?php echo htmlspecialchars($ref_number); ?></td>
@@ -501,7 +563,17 @@ if (!empty($channel) && !empty($bank_name) && !empty($bank_account) && $amount >
                         <td>Pending</td>
                     </tr>
                 </table>
+                <div class="notes-section">
+                    <h3>Important Notes:</h3>
+                    <ul>
+                        <li>Your withdrawal request is pending approval and will be processed within 24-48 hours.</li>
+                        <li>Please ensure your bank details are correct to avoid delays.</li>
+                        <li>If you have any questions, contact support via the app.</li>
+                        <li>Conversion rates are based on current market values and may vary slightly upon processing.</li>
+                    </ul>
+                </div>
                 <button class="back-btn" onclick="window.location.href='home.php'">Back to Home</button>
+                <button class="print-btn" onclick="window.print()">Print Receipt</button>
             <?php endif; ?>
         </div>
 
