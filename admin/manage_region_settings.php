@@ -26,10 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $channel = trim($_POST['channel']);
             $ch_name = trim($_POST['ch_name']);
             $ch_value = trim($_POST['ch_value']);
+            $withdraw_currency = trim($_POST['withdraw_currency']); // New field
 
             // Validation
-            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value)) {
-                $_SESSION['error'] = "All Dashboard fields are required.";
+            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value) || empty($withdraw_currency)) {
+                $_SESSION['error'] = "All Dashboard fields, including Currency, are required.";
             } else {
                 // Check if country already exists
                 $stmt = $pdo->prepare("SELECT id FROM region_settings WHERE country = ?");
@@ -38,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['error'] = "Region settings for this country already exist.";
                 } else {
                     $stmt = $pdo->prepare("
-                        INSERT INTO region_settings (country, section_header, channel, ch_name, ch_value)
-                        VALUES (?, ?, ?, ?, ?)
+                        INSERT INTO region_settings (country, section_header, channel, ch_name, ch_value, withdraw_currency)
+                        VALUES (?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value]);
+                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value, $withdraw_currency]);
                     $_SESSION['success'] = "Dashboard settings added successfully.";
                 }
             }
@@ -103,9 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Fetch all region settings
 try {
     $stmt = $pdo->prepare("
-        SELECT id, country, section_header, channel, ch_name, ch_value, verify_ch, vc_value, 
-               verify_ch_name, verify_ch_value, verify_medium, vcn_value, vcv_value, verify_currency, 
-               verify_amount, rate
+        SELECT id, country, section_header, channel, ch_name, ch_value, withdraw_currency, 
+               verify_ch, vc_value, verify_ch_name, verify_ch_value, verify_medium, vcn_value, 
+               vcv_value, verify_currency, verify_amount, rate
         FROM region_settings
         ORDER BY country
     ");
@@ -363,6 +364,7 @@ try {
             <input type="text" name="channel" placeholder="Channel (e.g., Bank)" required>
             <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name)" required>
             <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number)" required>
+            <input type="text" name="withdraw_currency" placeholder="Currency (e.g., NGN)" required>
             <input type="hidden" name="action" value="add_dashboard">
             <button type="submit" class="action-btn add">Add Dashboard Settings</button>
         </form>
@@ -381,6 +383,7 @@ try {
                             <th>Channel</th>
                             <th>Channel Name</th>
                             <th>Channel Number</th>
+                            <th>Currency</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -393,6 +396,7 @@ try {
                                 <td><?php echo htmlspecialchars($setting['channel']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_name']); ?></td>
                                 <td><?php echo htmlspecialchars($setting['ch_value']); ?></td>
+                                <td><?php echo htmlspecialchars($setting['withdraw_currency'] ?? 'N/A'); ?></td>
                                 <td class="action-buttons">
                                     <a href="edit_region_setting.php?id=<?php echo $setting['id']; ?>&section=dashboard" class="action-btn edit">Edit</a>
                                     <form method="POST" style="display: inline;">
