@@ -26,9 +26,9 @@ $section = $_GET['section'];
 // Fetch the region setting by ID
 try {
     $stmt = $pdo->prepare("
-        SELECT id, country, section_header, channel, ch_name, ch_value, verify_ch, vc_value, 
-               verify_ch_name, verify_ch_value, verify_medium, vcn_value, vcv_value, verify_currency, 
-               verify_amount, rate
+        SELECT id, country, section_header, channel, ch_name, ch_value, withdraw_currency, 
+               verify_ch, vc_value, verify_ch_name, verify_ch_value, verify_medium, vcn_value, 
+               vcv_value, verify_currency, verify_amount, rate
         FROM region_settings
         WHERE id = ?
     ");
@@ -58,10 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $channel = trim($_POST['channel']);
             $ch_name = trim($_POST['ch_name']);
             $ch_value = trim($_POST['ch_value']);
+            $withdraw_currency = trim($_POST['withdraw_currency']); // New field
 
             // Validation
-            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value)) {
-                $_SESSION['error'] = "All Dashboard fields are required.";
+            if (empty($country) || empty($section_header) || empty($channel) || empty($ch_name) || empty($ch_value) || empty($withdraw_currency)) {
+                $_SESSION['error'] = "All Dashboard fields, including Currency, are required.";
             } else {
                 // Check if country already exists for another ID
                 $stmt = $pdo->prepare("SELECT id FROM region_settings WHERE country = ? AND id != ?");
@@ -71,10 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $stmt = $pdo->prepare("
                         UPDATE region_settings 
-                        SET country = ?, section_header = ?, channel = ?, ch_name = ?, ch_value = ?
+                        SET country = ?, section_header = ?, channel = ?, ch_name = ?, ch_value = ?, withdraw_currency = ?
                         WHERE id = ?
                     ");
-                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value, $id]);
+                    $stmt->execute([$country, $section_header, $channel, $ch_name, $ch_value, $withdraw_currency, $id]);
                     $_SESSION['success'] = "Dashboard settings updated successfully.";
                 }
             }
@@ -278,6 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" name="channel" placeholder="Channel (e.g., Bank)" value="<?php echo htmlspecialchars($setting['channel']); ?>" required>
                 <input type="text" name="ch_name" placeholder="Channel Name (e.g., Bank Name)" value="<?php echo htmlspecialchars($setting['ch_name']); ?>" required>
                 <input type="text" name="ch_value" placeholder="Channel Number (e.g., Account Number)" value="<?php echo htmlspecialchars($setting['ch_value']); ?>" required>
+                <input type="text" name="withdraw_currency" placeholder="Currency (e.g., NGN)" value="<?php echo htmlspecialchars($setting['withdraw_currency'] ?? ''); ?>" required>
                 <button type="submit">Update Dashboard Settings</button>
             </form>
         <?php elseif ($section === 'verification'): ?>
