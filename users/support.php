@@ -1,5 +1,4 @@
-<?php
-session_start();
+trytart();
 require_once '../database/conn.php';
 
 // Set time zone to UTC
@@ -456,7 +455,7 @@ try {
 
             <div class="contact-info">
                 <h2>Contact Information</h2>
-                <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+17655329001" target="_blank">+1 (765) 532-9001</a></strong></p>
+                <p><i class="fab fa-whatsapp"></i> WhatsApp Contact: <strong><a href="https://wa.me/+15414416895" target="_blank">+1 (541) 441-6895</a></strong></p>
                 <p><i class="far fa-clock"></i> Availability: <strong>24/7</strong></p>
                 <p><i class="fas fa-hourglass-half"></i> Response Time: <strong>Usually within 24 hours</strong></p>
             </div>
