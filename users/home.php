@@ -119,7 +119,7 @@ try {
     $stmt->execute([$_SESSION['user_id']]);
     $video = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($video) {
-        $video['url'] = 'https://tasktube.app/' . ltrim($video['url'], '/');
+        $video['url'] = 'https://tasktube.us/' . ltrim($video['url'], '/');
         $url_check = url_exists($video['url']);
         if (!$url_check['status']) {
             error_log('Video file not accessible: ' . $video['url'] . ' (' . $url_check['error'] . ')', 3, '../debug.log');
