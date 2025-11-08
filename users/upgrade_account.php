@@ -19,34 +19,34 @@ try {
         exit;
     }
     $username = htmlspecialchars($user['name']);
-    $email    = htmlspecialchars($user['email']);
+    $email = htmlspecialchars($user['email']);
     $upgrade_status = $user['upgrade_status'] ?? 'not_upgraded';
-    $user_country   = htmlspecialchars($user['country']);
+    $user_country = htmlspecialchars($user['country']);
 } catch (PDOException $e) {
     error_log('Database error: ' . $e->getMessage(), 3, '../debug.log');
     header('Location: ../signin.php?error=database');
     exit;
 }
 
-/* ==================== FETCH SETTINGS + IMAGE ==================== */
+// === FETCH SETTINGS + IMAGE ===
 $region_image = '';
 try {
     $stmt = $pdo->prepare("
-        SELECT crypto, account_upgrade, verify_ch, vc_value, verify_ch_name, verify_ch_value,
-               COALESCE(verify_medium, 'Payment Method') AS verify_medium,
+        SELECT crypto, account_upgrade, verify_ch, vc_value, verify_ch_name, verify_ch_value, 
+               COALESCE(verify_medium, 'Payment Method') AS verify_medium, 
                vcn_value, vcv_value, verify_currency, verify_amount,
                images
-        FROM region_settings
+        FROM region_settings 
         WHERE country = ?
     ");
     $stmt->execute([$user_country]);
     $settings = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    
     if ($settings && !empty($settings['images'])) {
         $region_image = htmlspecialchars(trim($settings['images']));
     }
 
-    if (!$settings || (empty($settings['verify_ch']) && empty($settings['account_upgrade']))) {
+    if (!$settings || empty($settings['verify_ch']) && empty($settings['account_upgrade'])) {
         $error = 'Account upgrade settings not found for your country. Please contact support.';
         $crypto = 0;
         $payment_method_label = 'Payment Method';
@@ -62,17 +62,16 @@ try {
         error_log('No account upgrade settings found for country: ' . $user_country, 3, '../debug.log');
     } else {
         $crypto = $settings['crypto'] ?? 0;
-        // ---- NEW: use verify_ch first, then account_upgrade, then default ----
         $payment_method_label = htmlspecialchars($settings['verify_ch'] ?: ($settings['account_upgrade'] ?: 'Payment Method'));
-        $verify_ch            = htmlspecialchars($settings['verify_ch'] ?: 'Payment Method');
-        $vc_value             = htmlspecialchars($settings['vc_value'] ?: 'Obi Mikel');
-        $verify_ch_name       = htmlspecialchars($settings['verify_ch_name'] ?: 'Account Name');
-        $verify_ch_value      = htmlspecialchars($settings['verify_ch_value'] ?: 'Account Number');
-        $verify_medium        = htmlspecialchars($settings['verify_medium'] ?: 'Payment Method');
-        $vcn_value            = htmlspecialchars($settings['vcn_value'] ?: 'First Bank');
-        $vcv_value            = htmlspecialchars($settings['vcv_value'] ?: '8012345678');
-        $verify_currency      = htmlspecialchars($settings['verify_currency'] ?: 'NGN');
-        $verify_amount        = floatval($settings['verify_amount'] ?: 0.00);
+        $verify_ch = htmlspecialchars($settings['verify_ch'] ?: 'Payment Method');
+        $vc_value = htmlspecialchars($settings['vc_value'] ?: 'Obi Mikel');
+        $verify_ch_name = htmlspecialchars($settings['verify_ch_name'] ?: 'Account Name');
+        $verify_ch_value = htmlspecialchars($settings['verify_ch_value'] ?: 'Account Number');
+        $verify_medium = htmlspecialchars($settings['verify_medium'] ?: 'Payment Method');
+        $vcn_value = htmlspecialchars($settings['vcn_value'] ?: 'First Bank');
+        $vcv_value = htmlspecialchars($settings['vcv_value'] ?: '8012345678');
+        $verify_currency = htmlspecialchars($settings['verify_currency'] ?: 'NGN');
+        $verify_amount = floatval($settings['verify_amount'] ?: 0.00);
     }
 } catch (PDOException $e) {
     error_log('Settings fetch error: ' . $e->getMessage(), 3, '../debug.log');
@@ -90,11 +89,11 @@ try {
     $verify_amount = 0.00;
 }
 
-/* ==================== HANDLE FORM SUBMISSION ==================== */
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $proof_file = $_FILES['proof_file'] ?? null;
 
-    if (!$proof_file || $proof_file['error'] === UPLOAD_ERR_NO_FILE) {
+    if (!$証明_file || $proof_file['error'] === UPLOAD_ERR_NO_FILE) {
         $error = 'Please upload a payment receipt.';
     } else {
         $allowed_types = ['image/jpeg', 'image/png'];
@@ -107,8 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mkdir($upload_dir, 0755, true);
             }
 
-            $file_ext   = pathinfo($proof_file['name'], PATHINFO_EXTENSION);
-            $file_name  = 'upgrade_proof_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_ext;
+            $file_ext = pathinfo($proof_file['name'], PATHINFO_EXTENSION);
+            $file_name = 'upgrade_proof_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_ext;
             $upload_path = $upload_dir . $file_name;
 
             if (move_uploaded_file($proof_file['tmp_name'], $upload_path)) {
@@ -118,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$_SESSION['user_id']]);
 
                     $stmt = $pdo->prepare("
-                        INSERT INTO upgrade_requests
+                        INSERT INTO upgrade_requests 
                         (user_id, payment_amount, name, email, upload_path, file_name, status, payment_method, currency)
                         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
                     ");
                     $stmt->execute([
-                        $_SESSION['user_id'], $verify_amount, $username, $email,
+                        $_SESSION['user_id'], $verify_amount, $username, $email, 
                         $upload_path, $file_name, $payment_method_label, $verify_currency
                     ]);
 
@@ -143,25 +142,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Upgrade your Cash Tube account to unlock Currency Exchange." />
-    <meta name="keywords" content="Cash Tube, upgrade account, currency exchange, payment" />
-    <meta name="author" content="Cash Tube" />
     <title>Upgrade Account | Cash Tube</title>
 
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- jQuery & SweetAlert2 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
             --bg-color: #f7f9fc;
-            --gradient-bg: linear-gradient(135deg, #f7f9fc, #e5e7eb);
             --card-bg: #ffffff;
             --text-color: #1a1a1a;
             --subtext-color: #6b7280;
@@ -175,7 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         [data-theme="dark"] {
             --bg-color: #1f2937;
-            --gradient-bg: linear-gradient(135deg, #1f2937, #374151);
             --card-bg: #2d3748;
             --text-color: #e5e7eb;
             --subtext-color: #9ca3af;
@@ -187,170 +186,314 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --menu-text: #e5e7eb;
         }
 
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
         body {
             background: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
             padding-bottom: 100px;
-            transition: all .3s ease;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .container { max-width:1200px; margin:0 auto; padding:24px; position:relative; }
+        #gradient {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            opacity: 0.1;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
 
         .header {
-            display:flex; align-items:center; justify-content:space-between;
-            padding:24px 0; animation:slideIn .5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 0;
+            animation: slideDown 0.5s ease-out;
         }
-        .header img { width:64px; height:64px; margin-right:16px; border-radius:8px; }
-        .header-text h1 { font-size:26px; font-weight:700; }
-        .header-text p { font-size:16px; color:var(--subtext-color); margin-top:4px; }
+
+        .header img {
+            width: 64px;
+            height: 64px;
+            margin-right: 16px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .header-text h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .header-text p {
+            font-size: 16px;
+            color: var(--subtext-color);
+            margin-top: 4px;
+        }
 
         .theme-toggle {
-            background:var(--accent-color); color:#fff; border:none; padding:8px 16px;
-            border-radius:8px; cursor:pointer; font-size:14px; font-weight:500;
-            transition:background .3s ease, transform .2s ease;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
-        .theme-toggle:hover { background:var(--accent-hover); transform:scale(1.02); }
+
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
 
         .form-card {
-            background:var(--card-bg); border-radius:16px; padding:28px;
-            box-shadow:0 6px 16px var(--shadow-color); margin:24px 0;
-            animation:slideIn .5s ease-out .6s backwards;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            margin: 24px 0;
+            animation: fadeIn 0.6s ease-out;
+            border: 1px solid var(--border-color);
         }
-        .form-card h2 {
-            font-size:24px; margin-bottom:20px; text-align:center;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .form-card h2 i { margin-right:8px; font-size:1.2rem; color:var(--accent-color); }
 
-        .instructions { margin-bottom:24px; font-size:16px; color:var(--subtext-color); line-height:1.6; }
-        .instructions h3 { font-size:18px; font-weight:600; color:var(--text-color); margin-bottom:12px; }
-        .instructions p { margin-bottom:12px; }
-        .instructions strong { color:var(--text-color); }
-        .instructions ul { list-style:disc; padding-left:24px; margin-bottom:12px; }
-        .instructions ul li { margin-bottom:8px; }
+        .form-card h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+        }
+
+        .form-card h2 i {
+            margin-right: 8px;
+            font-size: 1.3rem;
+            color: var(--accent-color);
+        }
+
+        .instructions {
+            margin-bottom: 24px;
+            font-size: 16px;
+            color: var(--subtext-color);
+            line-height: 1.7;
+        }
+
+        .instructions h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+
+        .instructions p {
+            margin-bottom: 12px;
+        }
+
+        .instructions strong {
+            color: var(--text-color);
+        }
+
+        .instructions ul {
+            list-style-type: disc;
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .instructions ul li {
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
 
         .copyable {
-            cursor:pointer; padding:2px 4px; border-radius:4px;
-            transition:background-color .2s ease;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--border-color);
+            transition: background 0.2s ease;
+            user-select: none;
         }
-        .copyable:hover { background-color:var(--border-color); }
 
-        .payment-image { text-align:center; margin:24px 0; }
+        .copyable:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .payment-image {
+            text-align: center;
+            margin: 24px 0;
+        }
+
         .payment-image img {
-            max-width:100%; width:300px; height:auto; border-radius:12px;
-            box-shadow:0 4px 12px var(--shadow-color); border:1px solid var(--border-color);
-            transition:transform .2s ease;
+            max-width: 100%;
+            width: 300px;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease;
         }
-        .payment-image img:hover { transform:scale(1.02); }
 
-        .input-container { position:relative; margin-bottom:28px; }
-        .input-container input,
-        .input-container input[type="file"] {
-            width:100%; padding:14px; font-size:16px; border:2px solid var(--border-color);
-            border-radius:8px; background:var(--card-bg); color:var(--text-color);
-            outline:none; transition:border-color .3s ease;
+        .payment-image img:hover {
+            transform: scale(1.03);
         }
-        .input-container input[type="file"] { padding:12px; cursor:pointer; }
-        .input-container input:focus,
-        .input-container input:valid { border-color:var(--accent-color); }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 28px;
+        }
+
+        .input-container input[type="file"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-container input[type="file"]:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
 
         .input-container label {
-            position:absolute; top:-10px; left:12px; font-size:12px;
-            color:var(--subtext-color); background:var(--card-bg);
-            padding:0 4px; pointer-events:none; transition:all .3s ease;
-        }
-        .input-container input:placeholder-shown ~ label {
-            top:14px; font-size:16px; color:var(--subtext-color);
-        }
-        .input-container input:focus ~ label,
-        .input-container input:not(:placeholder-shown) ~ label {
-            top:-10px; font-size:12px; color:var(--accent-color);
+            position: absolute;
+            top: -10px;
+            left: 12px;
+            font-size: 12px;
+            color: var(--subtext-color);
+            background: var(--card-bg);
+            padding: 0 6px;
+            pointer-events: none;
         }
 
         .submit-btn {
-            width:100%; padding:14px; background:var(--accent-color); color:#fff;
-            font-size:16px; font-weight:600; border:none; border-radius:8px;
-            cursor:pointer; transition:background .3s ease, transform .2s ease;
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-color);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .submit-btn:hover { background:var(--accent-hover); transform:scale(1.02); }
 
-        .error { text-align:center; color:red; margin-bottom:20px; font-size:14px; }
-        .success { text-align:center; color:var(--accent-color); margin-bottom:20px; font-size:14px; }
-
-        .notification {
-            position:fixed; top:20px; right:20px; background:var(--card-bg);
-            color:var(--text-color); padding:16px 24px; border-radius:12px;
-            border:2px solid var(--accent-color); box-shadow:0 4px 12px var(--shadow-color),0 0 8px var(--accent-color);
-            z-index:1000; display:flex; align-items:center;
-            animation:slideInRight .5s ease-out, fadeOut .5s ease-out 3s forwards;
-            max-width:300px; transition:transform .2s ease;
+        .submit-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
         }
-        .notification:hover { transform:scale(1.05); }
-        .notification::before { content:'Lock'; font-size:1.2rem; margin-right:12px; color:var(--accent-color); }
-        .notification span { font-size:14px; font-weight:500; }
 
-        @keyframes slideInRight { from{opacity:0;transform:translateX(100px);} to{opacity:1;transform:translateX(0);} }
-        @keyframes fadeOut { to{opacity:0;transform:translateY(-20px);} }
+        .error, .success {
+            text-align: center;
+            margin: 16px 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .error { color: #ef4444; }
+        .success { color: var(--accent-color); }
 
         .bottom-menu {
-            position:fixed; bottom:0; left:0; width:100%; background:var(--menu-bg);
-            display:flex; justify-content:space-around; align-items:center;
-            padding:14px 0; box-shadow:0 -2px 8px var(--shadow-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--menu-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 14px 0;
+            box-shadow: 0 -4px 12px var(--shadow-color);
+            z-index: 100;
         }
+
         .bottom-menu a,
         .bottom-menu button {
-            color:var(--menu-text); text-decoration:none; font-size:14px;
-            font-weight:500; padding:10px 18px; transition:color .3s ease;
-            background:none; border:none; cursor:pointer;
+            color: var(--menu-text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
         }
+
         .bottom-menu a.active,
         .bottom-menu a:hover,
-        .bottom-menu button:hover { color:var(--accent-color); }
-
-        #gradient {
-            position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1;
-            background:var(--gradient-bg); transition:all .3s ease;
+        .bottom-menu button:hover {
+            color: var(--accent-color);
         }
 
-        @media (max-width:768px) {
-            .container { padding:16px; }
-            .header-text h1 { font-size:22px; }
-            .form-card { padding:20px; }
-            .notification { max-width:250px; right:10px; top:10px; }
-            .instructions { font-size:14px; }
-            .instructions h3 { font-size:16px; }
-            .payment-image img { width:100%; max-width:280px; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .header-text h1 { font-size: 22px; }
+            .form-card { padding: 20px; }
+            .payment-image img { width: 100%; max-width: 280px; }
         }
     </style>
 </head>
 <body>
     <div id="gradient"></div>
 
-    <div class="container" role="main">
+    <div class="container">
         <div class="header">
-            <div style="display:flex;align-items:center;">
-                <img src="img/top.png" alt="Cash Tube Logo" aria-label="Cash Tube Logo">
+            <div style="display: flex; align-items: center;">
+                <img src="img/top.png" alt="Cash Tube Logo">
                 <div class="header-text">
                     <h1>Upgrade Account</h1>
                     <p>Unlock Currency Exchange feature</p>
                 </div>
             </div>
-            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">Toggle Dark Mode</button>
+            <button class="theme-toggle" id="themeToggle">Dark Mode</button>
         </div>
 
         <div class="form-card">
-            <h2><i class="fas fa-lock"></i>Account Upgrade</h2>
+            <h2><i class="fas fa-lock"></i> Account Upgrade</h2>
 
             <?php if ($upgrade_status === 'upgraded'): ?>
                 <p class="success">Your account is already upgraded!</p>
-                <p style="text-align:center;"><a href="home.php">Return to Dashboard</a></p>
+                <p style="text-align: center;"><a href="home.php">Return to Dashboard</a></p>
 
             <?php elseif ($upgrade_status === 'pending'): ?>
                 <p class="success">Your upgrade request is pending review.</p>
-                <p style="text-align:center;"><a href="home.php">Return to Dashboard</a></p>
+                <p style="text-align: center;"><a href="home.php">Return to Dashboard</a></p>
 
             <?php else: ?>
                 <?php if (isset($error)): ?>
@@ -359,12 +502,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="instructions">
                     <h3>Upgrade Instructions</h3>
-                    <p>
-                        To upgrade your account and unlock Currency Exchange,
-                        please make a payment of
-                        <strong><?php echo htmlspecialchars($verify_currency); ?> <?php echo number_format($verify_amount, 2); ?></strong>
-                        via <strong><?php echo $payment_method_label; ?></strong> using the details below:
-                    </p>
+                    <p>To upgrade your account and unlock Currency Exchange, please make a payment of <strong><?php echo htmlspecialchars($verify_currency); ?> <?php echo number_format($verify_amount, 2); ?></strong> via <strong><?php echo $payment_method_label; ?></strong> using the details below:</p>
 
                     <?php if (!empty($region_image) && file_exists("../images/{$region_image}")): ?>
                         <div class="payment-image">
@@ -374,193 +512,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <p><strong><?php echo htmlspecialchars($verify_medium); ?>:</strong> <?php echo htmlspecialchars($vcn_value); ?></p>
                     <p><strong><?php echo htmlspecialchars($verify_ch_name); ?>:</strong> <?php echo htmlspecialchars($vc_value); ?></p>
-                    <p><strong><?php echo htmlspecialchars($verify_ch_value); ?>:</strong>
-                        <span class="copyable"
-                              data-copy="<?php echo htmlspecialchars($vcv_value); ?>"
-                              title="Tap to copy on mobile, press and hold on desktop">
+                    <p><strong><?php echo htmlspecialchars($verify_ch_value); ?>:</strong> 
+                        <span class="copyable" data-copy="<?php echo htmlspecialchars($vcv_value); ?>">
                             <?php echo htmlspecialchars($vcv_value); ?>
                         </span>
                     </p>
                     <p>After completing the payment, upload a payment receipt below. Your upgrade request will be reviewed within 48 hours.</p>
-
+                    
                     <h3>Important Notes</h3>
-                    <?php if ($crypto): ?>
-                        <ul>
-                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
-                            <li>Upload a clear payment receipt.</li>
-                            <li>Supported file types: JPG, PNG (max size: 5MB).</li>
-                            <li>Upgrade may take up to 48 hours to process.</li>
-                        </ul>
-                    <?php else: ?>
-                        <ul>
-                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
-                            <li>Upload a clear payment receipt.</li>
-                            <li>Supported file types: JPG, PNG (max size: 5MB).</li>
-                            <li>Upgrade may take up to 48 hours to process.</li>
-                        </ul>
-                    <?php endif; ?>
+                    <ul>
+                        <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified account.</li>
+                        <li>Upload a clear payment receipt.</li>
+                        <li>Supported file types: JPG, PNG (max size: 5MB).</li>
+                        <li>Upgrade may take up to 48 hours to process.</li>
+                    </ul>
                 </div>
 
                 <form action="upgrade_account.php" method="POST" enctype="multipart/form-data">
                     <div class="input-container">
-                        <input type="file" id="proof_file" name="proof_file" accept=".jpg,.jpeg,.png" required placeholder=" ">
+                        <input type="file" id="proof_file" name="proof_file" accept=".jpg,.jpeg,.png" required>
                         <label for="proof_file">Upload Payment Receipt</label>
                     </div>
                     <button type="submit" class="submit-btn">Submit Upgrade Request</button>
                 </form>
-                <p style="text-align:center;margin-top:20px;"><a href="home.php">Return to Dashboard</a></p>
+                <p style="text-align: center; margin-top: 20px;"><a href="home.php">Return to Dashboard</a></p>
             <?php endif; ?>
         </div>
-
-        <div id="notificationContainer"></div>
     </div>
 
-    <div class="bottom-menu" role="navigation">
+    <div class="bottom-menu">
         <a href="home.php">Home</a>
         <a href="profile.php" class="active">Profile</a>
         <a href="history.php">History</a>
         <a href="support.php">Support</a>
-        <button id="logoutBtn" aria-label="Log out">Logout</button>
+        <button id="logoutBtn">Logout</button>
     </div>
 
     <script>
-        /* ---------- LiveChat Widget ---------- */
-        window.__lc = window.__lc || {};
-        window.__lc.license = 15808029;
-        (function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e})(window,document,[].slice);
-
-        /* ---------- Dark Mode Toggle ---------- */
+        // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
         const body = document.body;
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        if (currentTheme === 'dark') {
-            body.setAttribute('data-theme','dark');
-            themeToggle.textContent = 'Toggle Light Mode';
-        }
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        body.setAttribute('data-theme', savedTheme);
+        themeToggle.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+
         themeToggle.addEventListener('click', () => {
             const isDark = body.getAttribute('data-theme') === 'dark';
-            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            themeToggle.textContent = isDark ? 'Toggle Dark Mode' : 'Toggle Light Mode';
-            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            localStorage.setItem('theme', newTheme);
         });
 
-        /* ---------- Bottom Menu Active State ---------- */
-        document.querySelectorAll('.bottom-menu a').forEach(item => {
-            item.addEventListener('click', () => {
-                document.querySelectorAll('.bottom-menu a').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
+        // Copy to Clipboard
+        document.querySelectorAll('.copyable').forEach(el => {
+            el.addEventListener('click', () => {
+                const text = el.getAttribute('data-copy');
+                navigator.clipboard.writeText(text).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: text + ' copied to clipboard',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                });
             });
         });
 
-        /* ---------- Floating Label Logic ---------- */
-        function updateLabel(input) {
-            const label = input.nextElementSibling;
-            if (label && label.tagName === 'LABEL') {
-                if (input.value !== '') {
-                    label.classList.add('active');
-                    input.classList.add('has-value');
-                } else {
-                    label.classList.remove('active');
-                    input.classList.remove('has-value');
-                }
-            }
-        }
-        document.querySelectorAll('.input-container input').forEach(inp => {
-            updateLabel(inp);
-            inp.addEventListener('input', () => updateLabel(inp));
-            inp.addEventListener('focus', () => { const lbl = inp.nextElementSibling; if (lbl) lbl.classList.add('active'); });
-            inp.addEventListener('blur', () => updateLabel(inp));
-        });
-
-        /* ---------- Logout Confirmation ---------- */
+        // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             Swal.fire({
-                title:'Log out?', text:'Are you sure you want to log out?', icon:'question',
-                showCancelButton:true, confirmButtonColor:'#22c55e', cancelButtonColor:'#d33',
-                confirmButtonText:'Yes, log out'
-            }).then(res => {
-                if (res.isConfirmed) {
-                    $.ajax({url:'logout.php',type:'POST',dataType:'json',
-                        success:r=>{ if(r.success) location.href='../signin.php'; else Swal.fire({icon:'error',title:'Error',text:'Failed to log out.'}); },
-                        error:()=>{ Swal.fire({icon:'error',title:'Server Error',text:'An error occurred.'}); }
-                    });
+                title: 'Log out?',
+                text: 'Are you sure you want to log out?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#22c55e',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, log out'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'logout.php';
                 }
             });
         });
 
-        /* ---------- Copy‑to‑Clipboard (mobile tap / desktop hold) ---------- */
-        const copyables = document.querySelectorAll('.copyable');
-        let pressTimer;
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        copyables.forEach(el => {
-            const copy = () => {
-                const txt = el.getAttribute('data-copy');
-                navigator.clipboard.writeText(txt).then(() => {
-                    Swal.fire({icon:'success',title:'Copied!',text:`${txt} copied to clipboard.`,timer:1500,showConfirmButton:false});
-                }).catch(() => {
-                    Swal.fire({icon:'error',title:'Copy Failed',text:'Unable to copy.',timer:2000});
-                });
-            };
-            if (isMobile) {
-                el.addEventListener('click', e => { e.preventDefault(); copy(); });
-            } else {
-                el.addEventListener('mousedown', () => pressTimer = setTimeout(copy, 500));
-                el.addEventListener('mouseup', () => clearTimeout(pressTimer));
-                el.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-            }
-        });
-
-        /* ---------- Notifications ---------- */
-        const notifContainer = document.getElementById('notificationContainer');
-        function fetchNotifications() {
-            $.ajax({url:'fetch_notifications.php',type:'GET',dataType:'json',
-                success:notifs=>{
-                    notifContainer.innerHTML = '';
-                    notifs.forEach((n,i) => {
-                        const div = document.createElement('div');
-                        div.className = `notification ${n.type||'success'}`;
-                        div.setAttribute('role','alert');
-                        div.innerHTML = `<span>${n.text}</span>`;
-                        notifContainer.appendChild(div);
-                        div.style.top = `${20 + i*80}px`;
-                        setTimeout(() => div.remove(), 3500);
-                    });
-                },
-                error:()=>{ console.error('Failed to fetch notifications'); }
-            });
-        }
-        fetchNotifications();
-        setInterval(fetchNotifications,20000);
-
-        /* ---------- Gradient Animation ---------- */
-        const colors = [[62,35,255],[60,255,60],[255,35,98],[45,175,230],[255,0,255],[255,128,0]];
-        let step = 0, colorIndices = [0,1,2,3], gradientSpeed = 0.002;
-        const grad = document.getElementById('gradient');
-        function updateGradient() {
-            const c0_0 = colors[colorIndices[0]], c0_1 = colors[colorIndices[1]],
-                  c1_0 = colors[colorIndices[2]], c1_1 = colors[colorIndices[3]];
-            const istep = 1 - step;
-            const r1 = Math.round(istep*c0_0[0] + step*c0_1[0]),
-                  g1 = Math.round(istep*c0_0[1] + step*c0_1[1]),
-                  b1 = Math.round(istep*c0_0[2] + step*c0_1[2]),
-                  r2 = Math.round(istep*c1_0[0] + step*c1_1[0]),
-                  g2 = Math.round(istep*c1_0[1] + step*c1_1[1]),
-                  b2 = Math.round(istep*c1_0[2] + step*c1_1[2]);
-            grad.style.background = `linear-gradient(135deg, rgb(${r1},${g1},${b1}), rgb(${r2},${g2},${b2}))`;
-            step += gradientSpeed;
-            if (step >= 1) {
-                step %= 1;
-                colorIndices[0] = colorIndices[1]; colorIndices[2] = colorIndices[3];
-                colorIndices[1] = (colorIndices[1] + Math.floor(1 + Math.random()*(colors.length-1))) % colors.length;
-                colorIndices[3] = (colorIndices[3] + Math.floor(1 + Math.random()*(colors.length-1))) % colors.length;
-            }
-            requestAnimationFrame(updateGradient);
-        }
-        requestAnimationFrame(updateGradient);
-
-        /* ---------- Disable Right‑Click ---------- */
-        document.addEventListener('contextmenu', e => e.preventDefault());
+        // Gradient Animation (subtle)
+        const gradient = document.getElementById('gradient');
+        let hue = 0;
+        setInterval(() => {
+            hue = (hue + 1) % 360;
+            gradient.style.background = `linear-gradient(135deg, hsl(${hue}, 70%, 60%), hsl(${ (hue + 60) % 360 }, 70%, 60%))`;
+            gradient.style.opacity = 0.1;
+        }, 50);
     </script>
 </body>
 </html>
