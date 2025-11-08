@@ -46,10 +46,10 @@ try {
         $region_image = htmlspecialchars(trim($settings['images']));
     }
 
-    if (!$settings || empty($settings['account_upgrade'])) {
+    if (!$settings || empty($settings['verify_ch']) && empty($settings['account_upgrade'])) {
         $error = 'Account upgrade settings not found for your country. Please contact support.';
         $crypto = 0;
-        $account_upgrade = 'Payment Method';
+        $payment_method_label = 'Payment Method';
         $verify_ch = 'Payment Method';
         $vc_value = 'Obi Mikel';
         $verify_ch_name = 'Account Name';
@@ -62,7 +62,8 @@ try {
         error_log('No account upgrade settings found for country: ' . $user_country, 3, '../debug.log');
     } else {
         $crypto = $settings['crypto'] ?? 0;
-        $account_upgrade = htmlspecialchars($settings['account_upgrade'] ?: 'Payment Method');
+        // Use verify_ch first, then fallback to account_upgrade
+        $payment_method_label = htmlspecialchars($settings['verify_ch'] ?: ($settings['account_upgrade'] ?: 'Payment Method'));
         $verify_ch = htmlspecialchars($settings['verify_ch'] ?: 'Payment Method');
         $vc_value = htmlspecialchars($settings['vc_value'] ?: 'Obi Mikel');
         $verify_ch_name = htmlspecialchars($settings['verify_ch_name'] ?: 'Account Name');
@@ -77,7 +78,7 @@ try {
     error_log('Settings fetch error: ' . $e->getMessage(), 3, '../debug.log');
     $error = 'Failed to load upgrade settings. Please try again later.';
     $crypto = 0;
-    $account_upgrade = 'Payment Method';
+    $payment_method_label = 'Payment Method';
     $verify_ch = 'Payment Method';
     $vc_value = 'Obi Mikel';
     $verify_ch_name = 'Account Name';
@@ -123,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $_SESSION['user_id'], $verify_amount, $username, $email, 
-                        $upload_path, $file_name, $account_upgrade, $verify_currency
+                        $upload_path, $file_name, $payment_method_label, $verify_currency
                     ]);
 
                     $pdo->commit();
@@ -551,7 +552,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="instructions">
                     <h3>Upgrade Instructions</h3>
-                    <p>To upgrade your account and unlock Currency Exchange, please make a payment of <strong><?php echo htmlspecialchars($verify_currency); ?> <?php echo number_format($verify_amount, 2); ?></strong> via <strong><?php echo htmlspecialchars($account_upgrade); ?></strong> using the details below:</p>
+                    <p>To upgrade your account and unlock Currency Exchange, please make a payment of <strong><?php echo htmlspecialchars($verify_currency); ?> <?php echo number_format($verify_amount, 2); ?></strong> via <strong><?php echo $payment_method_label; ?></strong> using the details below:</p>
 
                     <!-- PAYMENT IMAGE HERE -->
                     <?php if (!empty($region_image) && file_exists("../images/{$region_image}")): ?>
@@ -568,14 +569,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h3>Important Notes</h3>
                     <?php if ($crypto): ?>
                         <ul>
-                            <li>Ensure the payment is made via <strong><?php echo htmlspecialchars($account_upgrade); ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
+                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
                             <li>Upload a clear payment receipt.</li>
                             <li>Supported file types: JPG, PNG (max size: 5MB).</li>
                             <li>Upgrade may take up to 48 hours to process.</li>
                         </ul>
                     <?php else: ?>
                         <ul>
-                            <li>Ensure the payment is made via <strong><?php echo htmlspecialchars($account_upgrade); ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
+                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
                             <li>Upload a clear payment receipt.</li>
                             <li>Supported file types: JPG, PNG (max size: 5MB).</li>
                             <li>Upgrade may take up to 48 hours to process.</li>
@@ -613,7 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             var e = {
                 _q: [], _h: null, _v: "2.0",
                 on: function() { i(["on", c.call(arguments)]) },
-                once: function() { i(["once", c.call(arguments)]) },
+                once: function:function() { i(["once", c.call(arguments)]) },
                 off: function() { i(["off", c.call(arguments)]) },
                 get: function() { if (!e._h) throw new Error("[LiveChatWidget] You can't use getters before load."); return i(["get", c.call(arguments)]) },
                 call: function() { i(["call", c.call(arguments)]) },
