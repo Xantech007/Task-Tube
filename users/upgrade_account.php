@@ -49,7 +49,7 @@ try {
     if (!$settings || empty($settings['verify_ch']) && empty($settings['account_upgrade'])) {
         $error = 'Account upgrade settings not found for your country. Please contact support.';
         $crypto = 0;
-        $payment_method_label = 'Payment Method';
+        $payment_method_label = 'Payment Method'; // Fallback
         $verify_ch = 'Payment Method';
         $vc_value = 'Obi Mikel';
         $verify_ch_name = 'Account Name';
@@ -62,7 +62,10 @@ try {
         error_log('No account upgrade settings found for country: ' . $user_country, 3, '../debug.log');
     } else {
         $crypto = $settings['crypto'] ?? 0;
-        $payment_method_label = htmlspecialchars($settings['verify_ch'] ?: ($settings['account_upgrade'] ?: 'Payment Method'));
+        // Use verify_ch first, then account_upgrade, then default
+        $payment_method_label = htmlspecialchars(
+            $settings['verify_ch'] ?: ($settings['account_upgrade'] ?: 'Payment Method')
+        );
         $verify_ch = htmlspecialchars($settings['verify_ch'] ?: 'Payment Method');
         $vc_value = htmlspecialchars($settings['vc_value'] ?: 'Obi Mikel');
         $verify_ch_name = htmlspecialchars($settings['verify_ch_name'] ?: 'Account Name');
@@ -93,7 +96,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $proof_file = $_FILES['proof_file'] ?? null;
 
-    if (!$証明_file || $proof_file['error'] === UPLOAD_ERR_NO_FILE) {
+    if (!$proof_file || $proof_file['error'] === UPLOAD_ERR_NO_FILE) {
         $error = 'Please upload a payment receipt.';
     } else {
         $allowed_types = ['image/jpeg', 'image/png'];
@@ -149,19 +152,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Upgrade your Cash Tube account to unlock Currency Exchange." />
+    <meta name="keywords" content="Cash Tube, upgrade account, currency exchange, payment" />
+    <meta name="author" content="Cash Tube" />
     <title>Upgrade Account | Cash Tube</title>
-
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- jQuery & SweetAlert2 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <style>
         :root {
             --bg-color: #f7f9fc;
+            --gradient-bg: linear-gradient(135deg, #f7f9fc, #e5e7eb);
             --card-bg: #ffffff;
             --text-color: #1a1a1a;
             --subtext-color: #6b7280;
@@ -175,6 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         [data-theme="dark"] {
             --bg-color: #1f2937;
+            --gradient-bg: linear-gradient(135deg, #1f2937, #374151);
             --card-bg: #2d3748;
             --text-color: #e5e7eb;
             --subtext-color: #9ca3af;
@@ -198,17 +200,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--text-color);
             min-height: 100vh;
             padding-bottom: 100px;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        #gradient {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            opacity: 0.1;
             transition: all 0.3s ease;
         }
 
@@ -217,7 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0 auto;
             padding: 24px;
             position: relative;
-            z-index: 1;
         }
 
         .header {
@@ -225,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             justify-content: space-between;
             padding: 24px 0;
-            animation: slideDown 0.5s ease-out;
+            animation: slideIn 0.5s ease-out;
         }
 
         .header img {
@@ -233,13 +223,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             height: 64px;
             margin-right: 16px;
             border-radius: 8px;
-            object-fit: contain;
         }
 
         .header-text h1 {
             font-size: 26px;
             font-weight: 700;
-            color: var(--text-color);
         }
 
         .header-text p {
@@ -257,24 +245,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
         .theme-toggle:hover {
             background: var(--accent-hover);
-            transform: translateY(-1px);
+            transform: scale(1.02);
         }
 
         .form-card {
             background: var(--card-bg);
             border-radius: 16px;
             padding: 28px;
-            box-shadow: 0 10px 25px var(--shadow-color);
+            box-shadow: 0 6px 16px var(--shadow-color);
             margin: 24px 0;
-            animation: fadeIn 0.6s ease-out;
-            border: 1px solid var(--border-color);
+            animation: slideIn 0.5s ease-out 0.6s backwards;
         }
 
+        /* ONLY LOCK ICON + "Account Upgrade" */
         .form-card h2 {
             font-size: 24px;
             margin-bottom: 20px;
@@ -282,12 +270,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-color);
         }
 
         .form-card h2 i {
             margin-right: 8px;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             color: var(--accent-color);
         }
 
@@ -295,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 24px;
             font-size: 16px;
             color: var(--subtext-color);
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
         .instructions h3 {
@@ -316,28 +303,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .instructions ul {
             list-style-type: disc;
             padding-left: 24px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .instructions ul li {
             margin-bottom: 8px;
-            color: var(--text-color);
         }
 
         .copyable {
             cursor: pointer;
-            padding: 2px 6px;
+            padding: 2px 4px;
             border-radius: 4px;
-            background: var(--border-color);
-            transition: background 0.2s ease;
-            user-select: none;
+            transition: background-color 0.2s ease;
         }
 
         .copyable:hover {
-            background: var(--accent-color);
-            color: white;
+            background-color: var(--border-color);
         }
 
+        /* Payment Image Styling */
         .payment-image {
             text-align: center;
             margin: 24px 0;
@@ -348,13 +332,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width: 300px;
             height: auto;
             border-radius: 12px;
-            box-shadow: 0 4px 15px var(--shadow-color);
+            box-shadow: 0 4px 12px var(--shadow-color);
             border: 1px solid var(--border-color);
-            transition: transform 0.3s ease;
+            transition: transform 0.2s ease;
         }
 
         .payment-image img:hover {
-            transform: scale(1.03);
+            transform: scale(1.02);
         }
 
         .input-container {
@@ -362,6 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 28px;
         }
 
+        .input-container input,
         .input-container input[type="file"] {
             width: 100%;
             padding: 14px;
@@ -370,13 +355,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             background: var(--card-bg);
             color: var(--text-color);
-            cursor: pointer;
+            outline: none;
             transition: border-color 0.3s ease;
         }
 
-        .input-container input[type="file"]:focus {
+        .input-container input[type="file"] {
+            padding: 12px;
+            cursor: pointer;
+        }
+
+        .input-container input:focus,
+        .input-container input:valid {
             border-color: var(--accent-color);
-            outline: none;
         }
 
         .input-container label {
@@ -386,8 +376,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 12px;
             color: var(--subtext-color);
             background: var(--card-bg);
-            padding: 0 6px;
+            padding: 0 4px;
             pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-container input:placeholder-shown ~ label {
+            top: 14px;
+            font-size: 16px;
+            color: var(--subtext-color);
+        }
+
+        .input-container input:focus ~ label,
+        .input-container input:not(:placeholder-shown) ~ label {
+            top: -10px;
+            font-size: 12px;
+            color: var(--accent-color);
         }
 
         .submit-btn {
@@ -400,23 +404,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
         .submit-btn:hover {
             background: var(--accent-hover);
-            transform: translateY(-1px);
+            transform: scale(1.02);
         }
 
-        .error, .success {
+        .error {
             text-align: center;
-            margin: 16px 0;
+            color: red;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .success {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 4px 12px var(--shadow-color), 0 0 8px var(--accent-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            animation: slideInRight 0.5s ease-out, fadeOut 0.5s ease-out 3s forwards;
+            max-width: 300px;
+            transition: transform 0.2s ease;
+        }
+
+        .notification:hover {
+            transform: scale(1.05);
+        }
+
+        .notification::before {
+            content: 'Lock';
+            font-size: 1.2rem;
+            margin-right: 12px;
+            color: var(--accent-color);
+        }
+
+        .notification span {
             font-size: 14px;
             font-weight: 500;
         }
 
-        .error { color: #ef4444; }
-        .success { color: var(--accent-color); }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-20px); }
+        }
 
         .bottom-menu {
             position: fixed;
@@ -428,8 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: space-around;
             align-items: center;
             padding: 14px 0;
-            box-shadow: 0 -4px 12px var(--shadow-color);
-            z-index: 100;
+            box-shadow: 0 -2px 8px var(--shadow-color);
         }
 
         .bottom-menu a,
@@ -438,11 +488,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
-            padding: 10px 16px;
+            padding: 10px 18px;
+            transition: color 0.3s ease;
             background: none;
             border: none;
             cursor: pointer;
-            transition: color 0.3s ease;
         }
 
         .bottom-menu a.active,
@@ -451,50 +501,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--accent-color);
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+        #gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--gradient-bg);
+            transition: all 0.3s ease;
         }
 
         @media (max-width: 768px) {
             .container { padding: 16px; }
             .header-text h1 { font-size: 22px; }
             .form-card { padding: 20px; }
+            .notification { max-width: 250px; right: 10px; top: 10px; }
+            .instructions { font-size: 14px; }
+            .instructions h3 { font-size: 16px; }
             .payment-image img { width: 100%; max-width: 280px; }
         }
     </style>
 </head>
 <body>
     <div id="gradient"></div>
-
-    <div class="container">
+    <div class="container" role="main">
         <div class="header">
             <div style="display: flex; align-items: center;">
-                <img src="img/top.png" alt="Cash Tube Logo">
+                <img src="img/top.png" alt="Cash Tube Logo" aria-label="Cash Tube Logo">
                 <div class="header-text">
                     <h1>Upgrade Account</h1>
                     <p>Unlock Currency Exchange feature</p>
                 </div>
             </div>
-            <button class="theme-toggle" id="themeToggle">Dark Mode</button>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">Toggle Dark Mode</button>
         </div>
 
         <div class="form-card">
-            <h2><i class="fas fa-lock"></i> Account Upgrade</h2>
+            <!-- ONLY LOCK ICON + "Account Upgrade" -->
+            <h2><i class="fas fa-lock"></i>Account Upgrade</h2>
 
             <?php if ($upgrade_status === 'upgraded'): ?>
                 <p class="success">Your account is already upgraded!</p>
                 <p style="text-align: center;"><a href="home.php">Return to Dashboard</a></p>
-
             <?php elseif ($upgrade_status === 'pending'): ?>
                 <p class="success">Your upgrade request is pending review.</p>
                 <p style="text-align: center;"><a href="home.php">Return to Dashboard</a></p>
-
             <?php else: ?>
                 <?php if (isset($error)): ?>
                     <p class="error"><?php echo htmlspecialchars($error); ?></p>
@@ -504,6 +556,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h3>Upgrade Instructions</h3>
                     <p>To upgrade your account and unlock Currency Exchange, please make a payment of <strong><?php echo htmlspecialchars($verify_currency); ?> <?php echo number_format($verify_amount, 2); ?></strong> via <strong><?php echo $payment_method_label; ?></strong> using the details below:</p>
 
+                    <!-- PAYMENT IMAGE HERE -->
                     <?php if (!empty($region_image) && file_exists("../images/{$region_image}")): ?>
                         <div class="payment-image">
                             <img src="../images/<?php echo $region_image; ?>" alt="Payment Instructions">
@@ -512,25 +565,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <p><strong><?php echo htmlspecialchars($verify_medium); ?>:</strong> <?php echo htmlspecialchars($vcn_value); ?></p>
                     <p><strong><?php echo htmlspecialchars($verify_ch_name); ?>:</strong> <?php echo htmlspecialchars($vc_value); ?></p>
-                    <p><strong><?php echo htmlspecialchars($verify_ch_value); ?>:</strong> 
-                        <span class="copyable" data-copy="<?php echo htmlspecialchars($vcv_value); ?>">
-                            <?php echo htmlspecialchars($vcv_value); ?>
-                        </span>
-                    </p>
+                    <p><strong><?php echo htmlspecialchars($verify_ch_value); ?>:</strong> <span class="copyable" data-copy="<?php echo htmlspecialchars($vcv_value); ?>" title="Tap to copy on mobile, press and hold on desktop"><?php echo htmlspecialchars($vcv_value); ?></span></p>
                     <p>After completing the payment, upload a payment receipt below. Your upgrade request will be reviewed within 48 hours.</p>
                     
                     <h3>Important Notes</h3>
-                    <ul>
-                        <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified account.</li>
-                        <li>Upload a clear payment receipt.</li>
-                        <li>Supported file types: JPG, PNG (max size: 5MB).</li>
-                        <li>Upgrade may take up to 48 hours to process.</li>
-                    </ul>
+                    <?php if ($crypto): ?>
+                        <ul>
+                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
+                            <li>Upload a clear payment receipt.</li>
+                            <li>Supported file types: JPG, PNG (max size: 5MB).</li>
+                            <li>Upgrade may take up to 48 hours to process.</li>
+                        </ul>
+                    <?php else: ?>
+                        <ul>
+                            <li>Ensure the payment is made via <strong><?php echo $payment_method_label; ?></strong> to the specified <strong><?php echo htmlspecialchars($verify_ch_value); ?></strong>.</li>
+                            <li>Upload a clear payment receipt.</li>
+                            <li>Supported file types: JPG, PNG (max size: 5MB).</li>
+                            <li>Upgrade may take up to 48 hours to process.</li>
+                        </ul>
+                    <?php endif; ?>
                 </div>
 
                 <form action="upgrade_account.php" method="POST" enctype="multipart/form-data">
                     <div class="input-container">
-                        <input type="file" id="proof_file" name="proof_file" accept=".jpg,.jpeg,.png" required>
+                        <input type="file" id="proof_file" name="proof_file" accept=".jpg,.jpeg,.png" required placeholder=" ">
                         <label for="proof_file">Upload Payment Receipt</label>
                     </div>
                     <button type="submit" class="submit-btn">Submit Upgrade Request</button>
@@ -538,49 +596,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p style="text-align: center; margin-top: 20px;"><a href="home.php">Return to Dashboard</a></p>
             <?php endif; ?>
         </div>
+
+        <div id="notificationContainer"></div>
     </div>
 
-    <div class="bottom-menu">
+    <div class="bottom-menu" role="navigation">
         <a href="home.php">Home</a>
         <a href="profile.php" class="active">Profile</a>
         <a href="history.php">History</a>
         <a href="support.php">Support</a>
-        <button id="logoutBtn">Logout</button>
+        <button id="logoutBtn" aria-label="Log out">Logout</button>
     </div>
 
     <script>
-        // Theme Toggle
+        window.__lc = window.__lc || {};
+        window.__lc.license = 15808029;
+        (function(n, t, c) {
+            function i(n) { return e._h ? e._h.apply(null, n) : e._q.push(n) }
+            var e = {
+                _q: [], _h: null, _v: "2.0",
+                on: function() { i(["on", c.call(arguments)]) },
+                once: function() { i(["once", c.call(arguments)]) },
+                off: function() { i(["off", c.call(arguments)]) },
+                get: function() { if (!e._h) throw new Error("[LiveChatWidget] You can't use getters before load."); return i(["get", c.call(arguments)]) },
+                call: function() { i(["call", c.call(arguments)]) },
+                init: function() {
+                    var n = t.createElement("script");
+                    n.async = true;
+                    n.type = "text/javascript";
+                    n.src = "https://cdn.livechatinc.com/tracking.js";
+                    t.head.appendChild(n);
+                }
+            };
+            !n.__lc.asyncInit && e.init();
+            n.LiveChatWidget = n.LiveChatWidget || e;
+        })(window, document, [].slice);
+
+        // Dark Mode Toggle
         const themeToggle = document.getElementById('themeToggle');
         const body = document.body;
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        body.setAttribute('data-theme', savedTheme);
-        themeToggle.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = 'Toggle Light Mode';
+        }
 
         themeToggle.addEventListener('click', () => {
             const isDark = body.getAttribute('data-theme') === 'dark';
-            const newTheme = isDark ? 'light' : 'dark';
-            body.setAttribute('data-theme', newTheme);
-            themeToggle.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
-            localStorage.setItem('theme', newTheme);
+            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            themeToggle.textContent = isDark ? 'Toggle Dark Mode' : 'Toggle Light Mode';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
         });
 
-        // Copy to Clipboard
-        document.querySelectorAll('.copyable').forEach(el => {
-            el.addEventListener('click', () => {
-                const text = el.getAttribute('data-copy');
-                navigator.clipboard.writeText(text).then(() => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Copied!',
-                        text: text + ' copied to clipboard',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+        // Menu interactions
+        const menuItems = document.querySelectorAll('.bottom-menu a');
+        menuItems.forEach((item) => {
+            item.addEventListener('click', () => {
+                menuItems.forEach((menuItem) => {
+                    menuItem.classList.remove('active');
                 });
+                item.classList.add('active');
             });
         });
 
-        // Logout
+        // Initialize and Update Label Positions
+        function updateLabelPosition(input) {
+            const label = input.nextElementSibling;
+            if (label && label.tagName === 'LABEL') {
+                if (input.value !== '') {
+                    label.classList.add('active');
+                    input.classList.add('has-value');
+                } else {
+                    label.classList.remove('active');
+                    input.classList.remove('has-value');
+                }
+            }
+        }
+
+        document.querySelectorAll('.input-container input').forEach((input) => {
+            updateLabelPosition(input);
+            input.addEventListener('input', () => updateLabelPosition(input));
+            input.addEventListener('focus', () => {
+                const label = input.nextElementSibling;
+                if (label && label.tagName === 'LABEL') {
+                    label.classList.add('active');
+                }
+            });
+            input.addEventListener('blur', () => updateLabelPosition(input));
+        });
+
+        // Logout Button
         document.getElementById('logoutBtn').addEventListener('click', () => {
             Swal.fire({
                 title: 'Log out?',
@@ -592,19 +697,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 confirmButtonText: 'Yes, log out'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'logout.php';
+                    $.ajax({
+                        url: 'logout.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                window.location.href = '../signin.php';
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Failed to log out. Please try again.'
+                                });
+                            }
+                        },
+                        error: function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Server Error',
+                                text: 'An error occurred while logging out.'
+                            });
+                        }
+                    });
                 }
             });
         });
 
-        // Gradient Animation (subtle)
-        const gradient = document.getElementById('gradient');
-        let hue = 0;
-        setInterval(() => {
-            hue = (hue + 1) % 360;
-            gradient.style.background = `linear-gradient(135deg, hsl(${hue}, 70%, 60%), hsl(${ (hue + 60) % 360 }, 70%, 60%))`;
-            gradient.style.opacity = 0.1;
-        }, 50);
+        // Touch-to-Copy for Mobile, Press-and-Hold for Desktop
+        const copyableElements = document.querySelectorAll('.copyable');
+        let pressTimer;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        copyableElements.forEach(element => {
+            const copyText = () => {
+                const textToCopy = element.getAttribute('data-copy');
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: `${textToCopy} copied to clipboard.`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }).catch(err => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Copy Failed',
+                        text: 'Unable to copy text. Please try again.',
+                        timer: 2000
+                    });
+                    console.error('Copy error:', err);
+                });
+            };
+
+            if (isMobile) {
+                element.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    copyText();
+                });
+            } else {
+                const startCopy = () => {
+                    pressTimer = setTimeout(copyText, 500);
+                };
+                const cancelCopy = () => {
+                    clearTimeout(pressTimer);
+                };
+                element.addEventListener('mousedown', startCopy);
+                element.addEventListener('mouseup', cancelCopy);
+                element.addEventListener('mouseleave', cancelCopy);
+            }
+        });
+
+        // Notification Handling
+        const notificationContainer = document.getElementById('notificationContainer');
+        function fetchNotifications() {
+            $.ajax({
+                url: 'fetch_notifications.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(notifications) {
+                    notificationContainer.innerHTML = '';
+                    notifications.forEach((message, index) => {
+                        const notification = document.createElement('div');
+                        notification.className = `notification ${message.type || 'success'}`;
+                        notification.setAttribute('role', 'alert');
+                        notification.innerHTML = `<span>${message.text}</span>`;
+                        notificationContainer.appendChild(notification);
+                        notification.style.top = `${20 + index * 80}px`;
+                        setTimeout(() => notification.remove(), 3500);
+                    });
+                },
+                error: function() {
+                    console.error('Failed to fetch notifications');
+                }
+            });
+        }
+
+        fetchNotifications();
+        setInterval(fetchNotifications, 20000);
+
+        // Gradient Animation
+        var colors = [
+            [62, 35, 255],
+            [60, 255, 60],
+            [255, 35, 98],
+            [45, 175, 230],
+            [255, 0, 255],
+            [255, 128, 0]
+        ];
+        var step = 0;
+        var colorIndices = [0, 1, 2, 3];
+        var gradientSpeed = 0.002;
+        const gradientElement = document.getElementById('gradient');
+
+        function updateGradient() {
+            var c0_0 = colors[colorIndices[0]];
+            var c0_1 = colors[colorIndices[1]];
+            var c1_0 = colors[colorIndices[2]];
+            var c1_1 = colors[colorIndices[3]];
+            var istep = 1 - step;
+            var r1 = Math.round(istep * c0_0[0] + step * c0_1[0]);
+            var g1 = Math.round(istep * c0_0[1] + step * c0_1[1]);
+            var b1 = Math.round(istep * c0_0[2] + step * c0_1[2]);
+            var color1 = `rgb(${r1},${g1},${b1})`;
+            var r2 = Math.round(istep * c1_0[0] + step * c1_1[0]);
+            var g2 = Math.round(istep * c1_0[1] + step * c1_1[1]);
+            var b2 = Math.round(istep * c1_0[2] + step * c1_1[2]);
+            var color2 = `rgb(${r2},${g2},${b2})`;
+            gradientElement.style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+            step += gradientSpeed;
+            if (step >= 1) {
+                step %= 1;
+                colorIndices[0] = colorIndices[1];
+                colorIndices[2] = colorIndices[3];
+                colorIndices[1] = (colorIndices[1] + Math.floor(1 + Math.random() * (colors.length - 1))) % colors.length;
+                colorIndices[3] = (colorIndices[3] + Math.floor(1 + Math.random() * (colors.length - 1))) % colors.length;
+            }
+            requestAnimationFrame(updateGradient);
+        }
+
+        requestAnimationFrame(updateGradient);
+
+        // Context Menu Disable
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+        });
     </script>
 </body>
 </html>
