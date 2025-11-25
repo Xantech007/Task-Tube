@@ -1,8 +1,8 @@
 <?php
-$host = 'localhost'; // Database host
-$dbname = 'taskmolf_db'; // Database name
-$username = 'taskmolf_admin'; // Database username
-$password = 'Xander24427279'; // Database password
+$host = 'sql100.infinityfree.com'; // Database host
+$dbname = 'if0_40505508_db'; // Database name
+$username = 'if0_40505508'; // Database username
+$password = 'UtVpyuQKAvO'; // Database password
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
