@@ -15,6 +15,6 @@ jobs:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: public_html/  # Adjust to your target directory, e.g., public_html/subfolder/
+        server-dir: htdocs/  # Adjust to your target directory, e.g., public_html/subfolder/
         protocol: ftp  # Use 'ftps' for secure FTP if supported by Namecheap
         port: 21  # Adjust to 21098 for SFTP if needed
